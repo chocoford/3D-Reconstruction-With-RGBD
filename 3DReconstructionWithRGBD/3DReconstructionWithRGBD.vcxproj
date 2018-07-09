@@ -70,8 +70,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Program Files\Microsoft SDKs\Kinect\v1.8\inc;D:\OpenGL_TL\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\OpenGL_TL\lib;C:\Program Files\Microsoft SDKs\Kinect\v1.8\lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(KINECTSDK10_DIR)\inc;H:\TPLibrary\OpenGL\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(KINECTSDK10_DIR)\lib\x86;H:\TPLibrary\OpenGL\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\Program Files\Microsoft SDKs\Kinect\v1.8\inc;D:\OpenGL_TL\include;$(IncludePath)</IncludePath>
