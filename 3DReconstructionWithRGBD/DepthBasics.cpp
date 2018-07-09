@@ -15,8 +15,6 @@
 /// Constructor
 /// </summary>
 CDepthBasics::CDepthBasics() :
-    m_pD2DFactory(NULL),
-    m_pDrawDepth(NULL),
     m_hNextDepthFrameEvent(INVALID_HANDLE_VALUE),
     m_pDepthStreamHandle(INVALID_HANDLE_VALUE),
     m_bNearMode(false),
@@ -42,59 +40,10 @@ CDepthBasics::~CDepthBasics()
         CloseHandle(m_hNextDepthFrameEvent);
     }
 
-    // clean up Direct2D renderer
-    delete m_pDrawDepth;
-    m_pDrawDepth = NULL;
-
     // done with depth pixel data
     delete[] m_depthRGBX;
 
-    // clean up Direct2D
-    SafeRelease(m_pD2DFactory);
-
     SafeRelease(m_pNuiSensor);
-}
-
-/// <summary>
-/// Creates the main window and begins processing
-/// </summary>
-/// <param name="hInstance">handle to the application instance</param>
-/// <param name="nCmdShow">whether to display minimized, maximized, or normally</param>
-int CDepthBasics::Run()
-{
-    MSG       msg = {0};
-
-    const int eventCount = 1;
-    HANDLE hEvents[eventCount];
-
-    // Main message loop
-    while (WM_QUIT != msg.message)
-    {
-        hEvents[0] = m_hNextDepthFrameEvent;
-
-        // Check to see if we have either a message (by passing in QS_ALLINPUT)
-        // Or a Kinect event (hEvents)
-        // Update() will check for Kinect events individually, in case more than one are signalled
-        MsgWaitForMultipleObjects(eventCount, hEvents, FALSE, INFINITE, QS_ALLINPUT);
-
-        // Explicitly check the Kinect frame event since MsgWaitForMultipleObjects
-        // can return for other reasons even though it is signaled.
-        Update();
-		//std::cout << m_depthRGBX[0] << std::endl;
-        //while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
-        //{
-        //    // If a dialog message will be taken care of by the dialog proc
-        //    if ((hWndApp != NULL) && IsDialogMessageW(hWndApp, &msg))
-        //    {
-        //        continue;
-        //    }
-
-        //    TranslateMessage(&msg);
-        //    DispatchMessageW(&msg);
-        //}
-    }
-
-    return static_cast<int>(msg.wParam);
 }
 
 /// <summary>
@@ -111,100 +60,6 @@ void CDepthBasics::Update()
     {
         ProcessDepth();
     }
-}
-
-/// <summary>
-/// Handles window messages, passes most to the class instance to handle
-/// </summary>
-/// <param name="hWnd">window message is for</param>
-/// <param name="uMsg">message</param>
-/// <param name="wParam">message data</param>
-/// <param name="lParam">additional message data</param>
-/// <returns>result of message processing</returns>
-LRESULT CALLBACK CDepthBasics::MessageRouter(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    CDepthBasics* pThis = NULL;
-    
-    if (WM_INITDIALOG == uMsg)
-    {
-        pThis = reinterpret_cast<CDepthBasics*>(lParam);
-        SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-    }
-    else
-    {
-        pThis = reinterpret_cast<CDepthBasics*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
-    }
-
-    if (pThis)
-    {
-        return pThis->DlgProc(hWnd, uMsg, wParam, lParam);
-    }
-
-    return 0;
-}
-
-/// <summary>
-/// Handle windows messages for the class instance
-/// </summary>
-/// <param name="hWnd">window message is for</param>
-/// <param name="uMsg">message</param>
-/// <param name="wParam">message data</param>
-/// <param name="lParam">additional message data</param>
-/// <returns>result of message processing</returns>
-LRESULT CALLBACK CDepthBasics::DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-        case WM_INITDIALOG:
-        {
-            // Bind application window handle
-            m_hWnd = hWnd;
-
-            // Init Direct2D
-            D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
-
-            // Create and initialize a new Direct2D image renderer (take a look at ImageRenderer.h)
-            // We'll use this to draw the data we receive from the Kinect to the screen
-            m_pDrawDepth = new ImageRenderer();
-            HRESULT hr = m_pDrawDepth->Initialize(GetDlgItem(m_hWnd, IDC_VIDEOVIEW), m_pD2DFactory, cDepthWidth, cDepthHeight, cDepthWidth * sizeof(long));
-            if (FAILED(hr))
-            {
-                SetStatusMessage(L"Failed to initialize the Direct2D draw device.");
-            }
-
-            // Look for a connected Kinect, and create it if found
-            CreateFirstConnected();
-        }
-        break;
-
-        // If the titlebar X is clicked, destroy app
-        case WM_CLOSE:
-            DestroyWindow(hWnd);
-            break;
-
-        case WM_DESTROY:
-            // Quit the main message pump
-            PostQuitMessage(0);
-            break;
-
-        // Handle button press
-        case WM_COMMAND:
-            // If it was for the near mode control and a clicked event, change near mode
-            if (IDC_CHECK_NEARMODE == LOWORD(wParam) && BN_CLICKED == HIWORD(wParam))
-            {
-                // Toggle out internal state for near mode
-                m_bNearMode = !m_bNearMode;
-
-                if (NULL != m_pNuiSensor)
-                {
-                    // Set near mode based on our internal state
-                    m_pNuiSensor->NuiImageStreamSetImageFrameFlags(m_pDepthStreamHandle, m_bNearMode ? NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE : 0);
-                }
-            }
-            break;
-    }
-
-    return FALSE;
 }
 
 /// <summary>

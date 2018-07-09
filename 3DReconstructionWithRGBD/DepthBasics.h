@@ -8,7 +8,6 @@
 
 #include "resource.h"
 #include "NuiApi.h"
-#include "ImageRenderer.h"
 
 class CDepthBasics
 {
@@ -28,26 +27,6 @@ public:
     /// Destructor
     /// </summary>
     ~CDepthBasics();
-
-    /// <summary>
-    /// Handles window messages, passes most to the class instance to handle
-    /// </summary>
-    /// <param name="hWnd">window message is for</param>
-    /// <param name="uMsg">message</param>
-    /// <param name="wParam">message data</param>
-    /// <param name="lParam">additional message data</param>
-    /// <returns>result of message processing</returns>
-    static LRESULT CALLBACK MessageRouter(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-    /// <summary>
-    /// Handle windows messages for a class instance
-    /// </summary>
-    /// <param name="hWnd">window message is for</param>
-    /// <param name="uMsg">message</param>
-    /// <param name="wParam">message data</param>
-    /// <param name="lParam">additional message data</param>
-    /// <returns>result of message processing</returns>
-    LRESULT CALLBACK        DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     /// <summary>
     /// Creates the main window and begins processing
@@ -79,17 +58,9 @@ private:
 
     // Current Kinect
     INuiSensor*             m_pNuiSensor;
-
-    // Direct2D
-    ImageRenderer*          m_pDrawDepth;
-    ID2D1Factory*           m_pD2DFactory;
     
     HANDLE                  m_pDepthStreamHandle;
     HANDLE                  m_hNextDepthFrameEvent;
-
-
-
-
 
     /// <summary>
     /// Handle new depth data
