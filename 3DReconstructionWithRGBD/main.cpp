@@ -239,8 +239,9 @@ int main()
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();
-	
+		
 	application.DisConnected();
+
 	return 0;
 }
 

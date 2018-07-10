@@ -130,7 +130,8 @@ HRESULT CDepthBasics::CreateFirstConnected()
 }
 
 void CDepthBasics::DisConnected() {
-	m_pNuiSensor->NuiShutdown();
+	if (m_pNuiSensor)
+		m_pNuiSensor->NuiShutdown();
 }
 
 /// <summary>
