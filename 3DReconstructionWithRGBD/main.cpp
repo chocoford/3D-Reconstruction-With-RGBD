@@ -12,6 +12,10 @@
 
 #include"shader.h"
 #include "camera.h"
+
+#include "Triangulator.h"
+
+
 #include<iostream>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -40,6 +44,9 @@ int main()
 
 	// Look for a connected Kinect, and create it if found
 	application.CreateFirstConnected();
+
+	Triangulator triangulator;
+
 
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -75,6 +82,9 @@ int main()
 
 	//preconstruct point
 	float *vertices = new float[640 * 480 * 3];
+	long indexCount = 639 * (480 * 2 + 2);
+	unsigned int *indices = new unsigned int[indexCount];
+	
 
 	for (int i = 0; i < 480; i++) {
 		for (int j = 0; j < 640; j++)
@@ -82,6 +92,7 @@ int main()
 			vertices[3 * (640 * i + j) + 0] = ((float)j - 320) * 0.01; // x
 			vertices[3 * (640 * i + j) + 1] = -((float)i - 240) * 0.01; // y
 			vertices[3 * (640 * i + j) + 2] = 0;
+			indices[(640 * i + j)] = 0;
 		}
 	}
 
@@ -90,94 +101,55 @@ int main()
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	//glGenBuffers(1, &EBO);	
+	glGenBuffers(1, &EBO);	
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	//glPointSize(1);
-	
+	glEnable(GL_DEPTH_TEST);
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
 		application.Update();
-		//---sdk function 
-
-		//for (int i = 0; i < 480; i++) {
-		//	for (int j = 0; j < 640; j++) {
-		//		Vector4 points = NuiTransformDepthImageToSkeleton(i, j, application.depthValues[i]);
-		//		vertices[3 * (640 * i + j) + 0] = points.x * 10; // x
-		//		vertices[3 * (640 * i + j) + 1] = points.y * 10; // y
-		//		vertices[3 * (640 * i + j) + 2] = points.z * 10;
-		//	}
-		//}
-
-		// ---sdk function end
-
 
 		for (int i = 0; i < 640 * 480; i++) {
 				
 
-			vertices[3 * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : 200;
+			vertices[3 * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
 		}
-		//for (int i = 0; i < 640 * 480 * 3; i++) {
-		//	std::cout << vertices[i] << "\n";
-		//}
-		//------------//
-		//point//
-/*
-		float vertices[] = {
-			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-			0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-			0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-			0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-			0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-			0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-			0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-			-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-			-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-			0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-			0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-			0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-			0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-			0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-			0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		//triangulator.triangulate(vertices);
 
-			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-			0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-			0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-			0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		long index = 0;
+		for (int i = 0; i < 480 - 1; i++)
+		{
+			for (int j = 0; j < 640; j++) {
+				if (j == 0)
+				{
+					indices[index++] = 640 * i + j;
+				}
+				indices[index++] = 640 * i + j;
+				indices[index++] = 640 * (i + 1) + j;
+				if (j == 640 - 1)
+				{
+					indices[index++] = 640 * (i + 1) + j;
+				}
+			}
+		}
 
-			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-			0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-			0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-			0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-			-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-		};*/
+
 
 
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, 640 * 480 * 3 * sizeof(float), vertices, GL_STREAM_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, 640 * 480 * 3 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
 
 
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_DYNAMIC_DRAW);
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
@@ -223,7 +195,9 @@ int main()
 
 		// render box
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_POINTS, 0, 640 * 480);
+		//glDrawArrays(GL_POINTS, 0, 640 * 480);
+		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 639 * (480 * 2 + 2));
+		glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------

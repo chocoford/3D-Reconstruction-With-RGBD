@@ -28,13 +28,6 @@ public:
     /// </summary>
     ~CDepthBasics();
 
-    /// <summary>
-    /// Creates the main window and begins processing
-    /// </summary>
-    /// <param name="hInstance"></param>
-    /// <param name="nCmdShow"></param>
-    int                     Run();
-
 	/// <summary>
 	/// Main processing function
 	/// </summary>
