@@ -9,7 +9,7 @@
 #include "resource.h"
 #include "NuiApi.h"
 
-class CDepthBasics
+class KinectSensor
 {
     static const int        cDepthWidth  = 640;
     static const int        cDepthHeight = 480;
@@ -21,12 +21,12 @@ public:
     /// <summary>
     /// Constructor
     /// </summary>
-    CDepthBasics();
+    KinectSensor();
 
     /// <summary>
     /// Destructor
     /// </summary>
-    ~CDepthBasics();
+    ~KinectSensor();
 
 	/// <summary>
 	/// Main processing function
@@ -43,6 +43,7 @@ public:
 
 	BYTE*                   m_depthRGBX;
 	USHORT*                 depthValues;
+	USHORT*                 colorsRGBValues;
 
 private:
     HWND                    m_hWnd;
@@ -53,12 +54,15 @@ private:
     INuiSensor*             m_pNuiSensor;
     
     HANDLE                  m_pDepthStreamHandle;
+	HANDLE                  m_pColorStreamHandle;
     HANDLE                  m_hNextDepthFrameEvent;
+	HANDLE                  m_hNextColorFrameEvent;
 
     /// <summary>
-    /// Handle new depth data
+    /// Handle new depth and color data
     /// </summary>
     void                    ProcessDepth();
+	void                    ProcessColor();
 
     /// <summary>
     /// Set the status bar message

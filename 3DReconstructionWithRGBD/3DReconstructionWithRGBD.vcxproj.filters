@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DepthBasics.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -27,11 +24,11 @@
     <ClCompile Include="Triangulator.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="KinectSensor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DepthBasics.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -47,20 +44,26 @@
     <ClInclude Include="Triangulator.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="header.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="KinectSensor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="DepthBasics.aps">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="shader.fs">
       <Filter>资源文件</Filter>
     </None>
     <None Include="shader.vs">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="KinectSensor.aps">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="DepthBasics.rc">
+    <ResourceCompile Include="KinectSensor.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>

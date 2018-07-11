@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include <strsafe.h>
-#include "DepthBasics.h"
+#include "KinectSensor.h"
 #include "resource.h"
 
 #include<glad\glad.h>
@@ -14,7 +14,7 @@
 #include "camera.h"
 
 #include "Triangulator.h"
-
+#include "header.h"
 
 #include<iostream>
 
@@ -36,11 +36,16 @@ bool firstMouse = true;
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-
+// vertices
+const int vertexStride = 6;
+const int rowNum = kinectHeight;
+const int colNum = kinectWidth;
+const int vertexCount = rowNum * colNum;
+const int verticesSize = rowNum * colNum * vertexStride;
 
 int main()
 {
-	CDepthBasics application;
+	KinectSensor application;
 
 	// Look for a connected Kinect, and create it if found
 	application.CreateFirstConnected();
@@ -81,17 +86,22 @@ int main()
 	Shader ourShader("shader.vs", "shader.fs"); // you can name your shader files however you like
 
 	//preconstruct point
-	float *vertices = new float[640 * 480 * 3];
-	long indexCount = 639 * (480 * 2 + 2);
+	float *vertices = new float[verticesSize];
+	long indexCount = (colNum - 1) * (rowNum * 2 + 2);
 	unsigned int *indices = new unsigned int[indexCount];
 	
 
-	for (int i = 0; i < 480; i++) {
-		for (int j = 0; j < 640; j++)
+	for (int i = 0; i < rowNum; i++) {
+		for (int j = 0; j < colNum; j++)
 		{
-			vertices[3 * (640 * i + j) + 0] = ((float)j - 320) * 0.01; // x
-			vertices[3 * (640 * i + j) + 1] = -((float)i - 240) * 0.01; // y
-			vertices[3 * (640 * i + j) + 2] = 0;
+			vertices[vertexStride * (colNum * i + j) + 0] = ((float)j - (float)colNum / 2.0) * 0.01; // x
+			vertices[vertexStride * (colNum * i + j) + 1] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
+			vertices[vertexStride * (colNum * i + j) + 2] = 0;                        //depth
+			vertices[vertexStride * (colNum * i + j) + 3] = 0;                        //R
+			vertices[vertexStride * (colNum * i + j) + 4] = 0;                        //G
+			vertices[vertexStride * (colNum * i + j) + 5] = 0;                        //B
+
+			// initialize indices values;
 			indices[(640 * i + j)] = 0;
 		}
 	}
@@ -112,10 +122,14 @@ int main()
 	{
 		application.Update();
 
-		for (int i = 0; i < 640 * 480; i++) {
+		for (int i = 0; i < vertexCount; i++) {
 				
 
-			vertices[3 * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
+			vertices[vertexStride * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
+
+			vertices[vertexStride * i + 3] = (float)application.colorsRGBValues[3 * i + 0] / 255.0;//R
+			vertices[vertexStride * i + 4] = (float)application.colorsRGBValues[3 * i + 1] / 255.0;//G
+			vertices[vertexStride * i + 5] = (float)application.colorsRGBValues[3 * i + 2] / 255.0;//B
 		}
 
 
@@ -123,18 +137,18 @@ int main()
 		//triangulator.triangulate(vertices);
 
 		long index = 0;
-		for (int i = 0; i < 480 - 1; i++)
+		for (int i = 0; i < rowNum - 1; i++)
 		{
-			for (int j = 0; j < 640; j++) {
+			for (int j = 0; j < colNum; j++) {
 				if (j == 0)
 				{
-					indices[index++] = 640 * i + j;
+					indices[index++] = colNum * i + j;
 				}
-				indices[index++] = 640 * i + j;
-				indices[index++] = 640 * (i + 1) + j;
-				if (j == 640 - 1)
+				indices[index++] = colNum * i + j;
+				indices[index++] = colNum * (i + 1) + j;
+				if (j == colNum - 1)
 				{
-					indices[index++] = 640 * (i + 1) + j;
+					indices[index++] = colNum * (i + 1) + j;
 				}
 			}
 		}
@@ -145,17 +159,17 @@ int main()
 		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, 640 * 480 * 3 * sizeof(float), vertices, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, verticesSize * sizeof(float), vertices, GL_DYNAMIC_DRAW);
 
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_DYNAMIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-		//glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
 
 		// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 		glBindBuffer(GL_ARRAY_BUFFER, 0);

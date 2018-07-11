@@ -140,26 +140,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DepthBasics.cpp" />
+    <ClCompile Include="KinectSensor.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Triangulator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DepthBasics.aps" />
+    <None Include="KinectSensor.aps" />
     <None Include="shader.fs" />
     <None Include="shader.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
-    <ClInclude Include="DepthBasics.h" />
+    <ClInclude Include="KinectSensor.h" />
+    <ClInclude Include="header.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Triangulator.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="DepthBasics.rc" />
+    <ResourceCompile Include="KinectSensor.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
