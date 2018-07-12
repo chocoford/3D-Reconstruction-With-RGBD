@@ -222,8 +222,7 @@ int main()
 				if (j == 0) indices[index++] = currentIndex;
 
 				indices[index++] = currentIndex;
-				if ((i != rowNum - 1) && (abs((vertices[vertexStride * currentIndex + zOffset]
-					- vertices[vertexStride * (currentIndex + colNum) + zOffset])) >= MAXFIELD))
+				if ((i != rowNum - 1) && (abs((vertices[vertexStride * currentIndex + zOffset] - vertices[vertexStride * (currentIndex + colNum) + zOffset])) >= MAXFIELD))
 				{
 					indices[index++] = currentIndex;
 					indices[index++] = nextLineOfCurrentIndex;
@@ -231,8 +230,7 @@ int main()
 				}
 				indices[index++] = nextLineOfCurrentIndex;
 
-				if ((j != colNum - 1) && (abs((vertices[vertexStride * nextLineOfCurrentIndex + zOffset]
-					- vertices[vertexStride * rightOfCurrentIndex + zOffset])) >= MAXFIELD))
+				if ((j != colNum - 1) && (abs((vertices[vertexStride * nextLineOfCurrentIndex + zOffset] - vertices[vertexStride * rightOfCurrentIndex + zOffset])) >= MAXFIELD))
 				{
 					indices[index++] = nextLineOfCurrentIndex;
 					indices[index++] = rightOfCurrentIndex;
@@ -240,8 +238,7 @@ int main()
 
 				}
 
-				if (j == colNum - 1)
-					indices[index++] = nextLineOfCurrentIndex;
+				if (j == colNum - 1) indices[index++] = nextLineOfCurrentIndex;
 			}
 		}
 
