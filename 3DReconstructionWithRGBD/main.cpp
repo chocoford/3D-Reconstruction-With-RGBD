@@ -109,7 +109,7 @@ int main()
 	//preconstruct point
 	float *vertices = new float[verticesSize];
 	long indexCount = (colNum - 1) * (rowNum * 2 + 2);
-	unsigned int *indices = new unsigned int[colNum * rowNum * 3];//colNum * rowNum * 3æ˜¯æŒ‡æœ€åæƒ…å†µï¼Œå³æ¯ä¸ªç‚¹éƒ½è¢«ç‚¹äº†3æ¬¡ã€‚
+	unsigned int *indices = new unsigned int[colNum * rowNum * 3];//colNum * rowNum * 3ÊÇÖ¸×î»µÇé¿ö£¬¼´Ã¿¸öµã¶¼±»µãÁË3´Î¡£
 	
 
 	for (int i = 0; i < rowNum; i++) {
@@ -119,15 +119,13 @@ int main()
 			vertices[vertexStride * (colNum * i + j) + yOffset] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
 			vertices[vertexStride * (colNum * i + j) + zOffset] = 0;                        //depth
 			
-			for (int k = uxOffset; k < rOffset; k++) vertices[vertexStride * (colNum * i + j) + k] = 0;    //all vertices that to be calculate
+			for (int k = 3; k < 15; k++) vertices[vertexStride * (colNum * i + j) + k] = 0;    //all vertices that to be calculate
 
 			vertices[vertexStride * (colNum * i + j) + rOffset] = 0;                        //R
 			vertices[vertexStride * (colNum * i + j) + gOffset] = 0;                        //G
 			vertices[vertexStride * (colNum * i + j) + bOffset] = 0;                        //B
 			// initialize indices values;
 			indices[(640 * i + j)] = 0;
-			indices[2 * (640 * i + j)] = 0;
-			indices[3 * (640 * i + j)] = 0;
 		}
 	}
 
@@ -142,12 +140,14 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 	
 
+	short nvCalculagteFlag = 0;
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
 		// preprocess
+		nvCalculagteFlag = (nvCalculagteFlag+1) % 2;
 		long additionIndexCount = 0;
 
 		application.Update();
