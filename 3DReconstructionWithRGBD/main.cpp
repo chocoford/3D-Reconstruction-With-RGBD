@@ -37,11 +37,30 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // vertices
-const int vertexStride = 9; //xyz normal rgb
+const int vertexStride = 18; //xyz normal(u d l r) rgb
 const int rowNum = kinectHeight;
 const int colNum = kinectWidth;
 const int vertexCount = rowNum * colNum;
 const int verticesSize = rowNum * colNum * vertexStride;
+
+const int8_t xOffset = 0;
+const int8_t yOffset = 1;
+const int8_t zOffset = 2;
+const int8_t uxOffset = 3;
+const int8_t uyOffset = 4;
+const int8_t uzOffset = 5;
+const int8_t lxOffset = 6;
+const int8_t lyOffset = 7;
+const int8_t lzOffset = 8;
+const int8_t dxOffset = 9;
+const int8_t dyOffset = 10;
+const int8_t dzOffset = 11;
+const int8_t rxOffset = 12;
+const int8_t ryOffset = 13;
+const int8_t rzOffset = 14;
+const int8_t rOffset = 15;
+const int8_t gOffset = 16;
+const int8_t bOffset = 17;
 
 const int MAXFIELD = 10;
 
@@ -89,22 +108,22 @@ int main()
 
 	//preconstruct point
 	float *vertices = new float[verticesSize];
-	long indexCount = (colNum - 1) * (rowNum * 2 + 2) * 4;
-	unsigned int *indices = new unsigned int[indexCount];
+	long indexCount = (colNum - 1) * (rowNum * 2 + 2);
+	unsigned int *indices = new unsigned int[colNum * rowNum * 3];//colNum * rowNum * 3是指最坏情况，即每个点都被点了3次。
 	
 
 	for (int i = 0; i < rowNum; i++) {
 		for (int j = 0; j < colNum; j++)
 		{
-			vertices[vertexStride * (colNum * i + j) + 0] = ((float)j - (float)colNum / 2.0) * 0.01; // x
-			vertices[vertexStride * (colNum * i + j) + 1] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
-			vertices[vertexStride * (colNum * i + j) + 2] = 0;                        //depth
-			vertices[vertexStride * (colNum * i + j) + 3] = 0;                        //nx
-			vertices[vertexStride * (colNum * i + j) + 4] = 0;                        //ny
-			vertices[vertexStride * (colNum * i + j) + 5] = -1;                        //nz
-			vertices[vertexStride * (colNum * i + j) + 6] = 0;                        //R
-			vertices[vertexStride * (colNum * i + j) + 7] = 0;                        //G
-			vertices[vertexStride * (colNum * i + j) + 8] = 0;                        //B
+			vertices[vertexStride * (colNum * i + j) + xOffset] = ((float)j - (float)colNum / 2.0) * 0.01; // x
+			vertices[vertexStride * (colNum * i + j) + yOffset] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
+			vertices[vertexStride * (colNum * i + j) + zOffset] = 0;                        //depth
+			
+			for (int k = 3; k < 15; k++) vertices[vertexStride * (colNum * i + j) + k] = 0;    //all vertices that to be calculate
+
+			vertices[vertexStride * (colNum * i + j) + rOffset] = 0;                        //R
+			vertices[vertexStride * (colNum * i + j) + gOffset] = 0;                        //G
+			vertices[vertexStride * (colNum * i + j) + bOffset] = 0;                        //B
 			// initialize indices values;
 			indices[(640 * i + j)] = 0;
 		}
@@ -129,21 +148,20 @@ int main()
 	{
 		// preprocess
 		nvCalculagteFlag = (nvCalculagteFlag+1) % 2;
+		long additionIndexCount = 0;
 
 		application.Update();
 
+
 		for (long i = 0; i < vertexCount; i++) {
-				
-
-			vertices[vertexStride * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
-
-			vertices[vertexStride * i + 6] = (float)application.colorsRGBValues[3 * i + 0] / 255.0;//R
-			vertices[vertexStride * i + 7] = (float)application.colorsRGBValues[3 * i + 1] / 255.0;//G
-			vertices[vertexStride * i + 8] = (float)application.colorsRGBValues[3 * i + 2] / 255.0;//B
+			vertices[vertexStride * i + zOffset] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
+			vertices[vertexStride * i + rOffset] = (float)application.colorsRGBValues[3 * i + 0] / 255.0;//R
+			vertices[vertexStride * i + gOffset] = (float)application.colorsRGBValues[3 * i + 1] / 255.0;//G
+			vertices[vertexStride * i + bOffset] = (float)application.colorsRGBValues[3 * i + 2] / 255.0;//B
 		}
 
 		// calculate normal vector.
-		if (nvCalculagteFlag == -1)
+		if (NULL)
 		for (long i = 0; i < vertexCount; i++)
 		{
 			int col = i % colNum;
@@ -154,43 +172,45 @@ int main()
 				float cx = vertices[vertexStride * i];
 				float cy = vertices[vertexStride * i + 1];
 				float cz = vertices[vertexStride * i + 2];
-				glm::vec3 center = glm::vec3(cx, cy, cz);
+				//glm::vec3 center = glm::vec3(cx, cy, cz);
 
 				//upper
 				float ux = vertices[vertexStride * (i + colNum)];
 				float uy = vertices[vertexStride * (i + colNum) + 1];
 				float uz = vertices[vertexStride * (i + colNum) + 2];
-				glm::vec3 upper = glm::vec3(ux, uy, uz) - center;
-
+				//glm::vec3 upper = glm::vec3(ux, uy, uz) - center;
+				vertices[vertexStride * i + uxOffset] = ux - cx;
+				vertices[vertexStride * i + uyOffset] = uy - cy;
+				vertices[vertexStride * i + uzOffset] = uz - cz;
 
 				//down
 				float dx = vertices[vertexStride * (i - colNum)];
 				float dy = vertices[vertexStride * (i - colNum) + 1];
 				float dz = vertices[vertexStride * (i - colNum) + 2];
-				glm::vec3 down = glm::vec3(dx, dy, dz) - center;
+				//glm::vec3 down = glm::vec3(dx, dy, dz) - center;
+				vertices[vertexStride * i + dxOffset] = dx - cx;
+				vertices[vertexStride * i + dyOffset] = dy - cy;
+				vertices[vertexStride * i + dzOffset] = dz - cz;
+
 
 				//left
 				float lx = vertices[vertexStride * (i - 1)];
 				float ly = vertices[vertexStride * (i - 1) + 1];
 				float lz = vertices[vertexStride * (i - 1) + 2];
-				glm::vec3 left = glm::vec3(lx, ly, lz) - center;
+				//glm::vec3 left = glm::vec3(lx, ly, lz) - center;
+				vertices[vertexStride * i + lxOffset] = lx - cx;
+				vertices[vertexStride * i + lyOffset] = ly - cy;
+				vertices[vertexStride * i + lzOffset] = lz - cz;
 
 				//right
 				float rx = vertices[vertexStride * (i + 1)];
 				float ry = vertices[vertexStride * (i + 1) + 1];
 				float rz = vertices[vertexStride * (i + 1) + 2];
-				glm::vec3 right = glm::vec3(rx, ry, rz) - center;
+				//glm::vec3 right = glm::vec3(rx, ry, rz) - center;
+				vertices[vertexStride * i + rxOffset] = rx - cx;
+				vertices[vertexStride * i + ryOffset] = ry - cy;
+				vertices[vertexStride * i + rzOffset] = rz - cz;
 
-				//glm::vec3 upLeft = glm::cross(upper, left);
-				//glm::vec3 downRight = glm::cross(down, right);
-
-				//glm::vec3 normal = (upLeft);
-
-				glm::vec3 normal = glm::vec3(0, 0, -1);
-
-				vertices[vertexStride * i + 3] = normal.x;//nx
-				vertices[vertexStride * i + 4] = normal.y;//ny
-				vertices[vertexStride * i + 5] = normal.z;;//nz
 			}
 		}
 
@@ -207,31 +227,22 @@ int main()
 
 				indices[index++] = colNum * i + j;
 
-				if ((i != rowNum - 1) && (i != 0) && (abs((vertices[vertexStride * indices[index - 1] + 2]
+				if ((i != rowNum - 1) && (abs((vertices[vertexStride * indices[index - 1] + 2]
 					- vertices[vertexStride * indices[index - 1] + 2 + colNum * vertexStride])) >= MAXFIELD))
 				{
 					indices[index++] = colNum * i + j;
 					indices[index++] = colNum * (i + 1) + j;
 					first = 1;
-					//f = true;
-					//indices[index++] = colNum * (i + 1) + j - 1;
-					//indices[index++] = colNum * (i + 1) + j;
-
+					additionIndexCount += 2;
 				}
 
 				indices[index++] = colNum * (i + 1) + j;
-				//if (f)
-				//{
-				//	//f = false;
-				//}
-				if ((j != colNum - 1) && (j != 0) && (abs((vertices[vertexStride * indices[index - 2 - first] + 2]
+				if ((j != colNum - 1) && (abs((vertices[vertexStride * indices[index - 2 - first] + 2]
 					- vertices[vertexStride * indices[index - 2 - first] + 2 + vertexStride])) >= MAXFIELD))
 				{
 					indices[index++] = colNum * (i + 1) + j;
 					indices[index++] = colNum * i + j + 1;
-					//f = true;
-					//indices[index++] = colNum * (i + 1) + j - 1;
-					//indices[index++] = colNum * (i + 1) + j;
+					additionIndexCount += 2;
 
 				}
 
@@ -250,16 +261,25 @@ int main()
 
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned int), indices, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (indexCount + additionIndexCount) * sizeof(unsigned int), indices, GL_DYNAMIC_DRAW);
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(3 * sizeof(float)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(uxOffset * sizeof(float)));
 		glEnableVertexAttribArray(1);
 
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(3 * sizeof(float)));
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(lxOffset * sizeof(float)));
 		glEnableVertexAttribArray(2);
+
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(dxOffset * sizeof(float)));
+		glEnableVertexAttribArray(3);
+
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(rxOffset * sizeof(float)));
+		glEnableVertexAttribArray(4);
+
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(rOffset * sizeof(float)));
+		glEnableVertexAttribArray(5);
 
 		// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
