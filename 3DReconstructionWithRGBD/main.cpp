@@ -37,7 +37,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 // vertices
-const int vertexStride = 6;
+const int vertexStride = 9; //xyz normal rgb
 const int rowNum = kinectHeight;
 const int colNum = kinectWidth;
 const int vertexCount = rowNum * colNum;
@@ -97,10 +97,12 @@ int main()
 			vertices[vertexStride * (colNum * i + j) + 0] = ((float)j - (float)colNum / 2.0) * 0.01; // x
 			vertices[vertexStride * (colNum * i + j) + 1] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
 			vertices[vertexStride * (colNum * i + j) + 2] = 0;                        //depth
-			vertices[vertexStride * (colNum * i + j) + 3] = 0;                        //R
-			vertices[vertexStride * (colNum * i + j) + 4] = 0;                        //G
-			vertices[vertexStride * (colNum * i + j) + 5] = 0;                        //B
-
+			vertices[vertexStride * (colNum * i + j) + 3] = 0;                        //nx
+			vertices[vertexStride * (colNum * i + j) + 4] = 0;                        //ny
+			vertices[vertexStride * (colNum * i + j) + 5] = -1;                        //nz
+			vertices[vertexStride * (colNum * i + j) + 6] = 0;                        //R
+			vertices[vertexStride * (colNum * i + j) + 7] = 0;                        //G
+			vertices[vertexStride * (colNum * i + j) + 8] = 0;                        //B
 			// initialize indices values;
 			indices[(640 * i + j)] = 0;
 		}
@@ -115,23 +117,80 @@ int main()
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	//glPointSize(1);
 	glEnable(GL_DEPTH_TEST);
+	
+
+	short nvCalculagteFlag = 0;
 
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
+		// preprocess
+		nvCalculagteFlag = (nvCalculagteFlag+1) % 2;
+
 		application.Update();
 
-		for (int i = 0; i < vertexCount; i++) {
+		for (long i = 0; i < vertexCount; i++) {
 				
 
 			vertices[vertexStride * i + 2] = application.depthValues[i] > 0 ? -(float)application.depthValues[i] * 0.005 : -20;
 
-			vertices[vertexStride * i + 3] = (float)application.colorsRGBValues[3 * i + 0] / 255.0;//R
-			vertices[vertexStride * i + 4] = (float)application.colorsRGBValues[3 * i + 1] / 255.0;//G
-			vertices[vertexStride * i + 5] = (float)application.colorsRGBValues[3 * i + 2] / 255.0;//B
+			vertices[vertexStride * i + 6] = (float)application.colorsRGBValues[3 * i + 0] / 255.0;//R
+			vertices[vertexStride * i + 7] = (float)application.colorsRGBValues[3 * i + 1] / 255.0;//G
+			vertices[vertexStride * i + 8] = (float)application.colorsRGBValues[3 * i + 2] / 255.0;//B
 		}
 
+		// calculate normal vector.
+		if (1)
+		for (long i = 0; i < vertexCount; i++)
+		{
+			int col = i % colNum;
+			int row = i / colNum;
+
+			if (col > 0 && col < colNum - 1 && row > 0 && row < rowNum - 1) {
+				//center point
+				float cx = vertices[vertexStride * i];
+				float cy = vertices[vertexStride * i + 1];
+				float cz = vertices[vertexStride * i + 2];
+				glm::vec3 center = glm::vec3(cx, cy, cz);
+
+				//upper
+				float ux = vertices[vertexStride * (i + colNum)];
+				float uy = vertices[vertexStride * (i + colNum) + 1];
+				float uz = vertices[vertexStride * (i + colNum) + 2];
+				glm::vec3 upper = glm::vec3(ux, uy, uz) - center;
+
+
+				//down
+				float dx = vertices[vertexStride * (i - colNum)];
+				float dy = vertices[vertexStride * (i - colNum) + 1];
+				float dz = vertices[vertexStride * (i - colNum) + 2];
+				glm::vec3 down = glm::vec3(dx, dy, dz) - center;
+
+				//left
+				float lx = vertices[vertexStride * (i - 1)];
+				float ly = vertices[vertexStride * (i - 1) + 1];
+				float lz = vertices[vertexStride * (i - 1) + 2];
+				glm::vec3 left = glm::vec3(lx, ly, lz) - center;
+
+				//right
+				float rx = vertices[vertexStride * (i + 1)];
+				float ry = vertices[vertexStride * (i + 1) + 1];
+				float rz = vertices[vertexStride * (i + 1) + 2];
+				glm::vec3 right = glm::vec3(rx, ry, rz) - center;
+
+				//glm::vec3 upLeft = glm::cross(upper, left);
+				//glm::vec3 downRight = glm::cross(down, right);
+
+				//glm::vec3 normal = (upLeft);
+
+				glm::vec3 normal = glm::vec3(0, 0, -1);
+
+				vertices[vertexStride * i + 3] = normal.x;//nx
+				vertices[vertexStride * i + 4] = normal.y;//ny
+				vertices[vertexStride * i + 5] = normal.z;;//nz
+			}
+		}
 
 
 		//triangulator.triangulate(vertices);
@@ -170,6 +229,9 @@ int main()
 
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
+
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, vertexStride * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(2);
 
 		// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
