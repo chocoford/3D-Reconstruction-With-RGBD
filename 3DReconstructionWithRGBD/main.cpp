@@ -17,7 +17,9 @@
 #include "header.h"
 
 #include<iostream>
+#include <math.h>
 
+const int MAXFIELD = 1;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
@@ -87,7 +89,7 @@ int main()
 
 	//preconstruct point
 	float *vertices = new float[verticesSize];
-	long indexCount = (colNum - 1) * (rowNum * 2 + 2);
+	long indexCount = (colNum - 1) * (rowNum * 2 + 2) * 4;
 	unsigned int *indices = new unsigned int[indexCount];
 	
 
@@ -140,16 +142,42 @@ int main()
 		for (int i = 0; i < rowNum - 1; i++)
 		{
 			for (int j = 0; j < colNum; j++) {
+				int first = 0;
 				if (j == 0)
+					indices[index++] = colNum * i + j;
+
+				indices[index++] = colNum * i + j;
+
+				if ((i != rowNum - 1) && (i != 0) && (abs((vertices[vertexStride * indices[index - 1] + 2]
+					- vertices[vertexStride * indices[index - 1] + 2 + colNum * vertexStride])) >= MAXFIELD))
 				{
 					indices[index++] = colNum * i + j;
+					indices[index++] = colNum * (i + 1) + j;
+					first = 1;
+					//f = true;
+					//indices[index++] = colNum * (i + 1) + j - 1;
+					//indices[index++] = colNum * (i + 1) + j;
+
 				}
-				indices[index++] = colNum * i + j;
+
 				indices[index++] = colNum * (i + 1) + j;
-				if (j == colNum - 1)
+				//if (f)
+				//{
+				//	//f = false;
+				//}
+				if ((j != colNum - 1) && (j != 0) && (abs((vertices[vertexStride * indices[index - 2 - first] + 2]
+					- vertices[vertexStride * indices[index - 2 - first] + 2 + vertexStride])) >= MAXFIELD))
 				{
 					indices[index++] = colNum * (i + 1) + j;
+					indices[index++] = colNum * i + j + 1;
+					//f = true;
+					//indices[index++] = colNum * (i + 1) + j - 1;
+					//indices[index++] = colNum * (i + 1) + j;
+					
 				}
+				
+				if (j == colNum - 1)
+					indices[index++] = colNum * (i + 1) + j;
 			}
 		}
 
