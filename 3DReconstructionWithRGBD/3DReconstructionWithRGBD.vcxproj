@@ -58,8 +58,6 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\vs属性表\OpenGL_Kinect.props" />
-    <Import Project="..\..\..\vs属性表\PCLDebug_x86.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -71,7 +69,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(KINECTSDK10_DIR)\inc;H:\TPLibrary\OpenGL\include;H:\TPLibrary\PCL 1.8.1\3rdParty\VTK\include\vtk-8.0;H:\TPLibrary\PCL 1.8.1\3rdParty\Qhull\include;H:\TPLibrary\PCL 1.8.1\3rdParty\OpenNI2\Include;H:\TPLibrary\PCL 1.8.1\3rdParty\FLANN\include;H:\TPLibrary\PCL 1.8.1\3rdParty\Eigen\eigen3;H:\TPLibrary\PCL 1.8.1\3rdParty\Boost\include\boost-1_64;H:\TPLibrary\PCL 1.8.1\include\pcl-1.8;$(IncludePath)</IncludePath>
+    <LibraryPath>$(KINECTSDK10_DIR)\lib\x86;H:\TPLibrary\OpenGL\lib;H:\TPLibrary\PCL 1.8.1\3rdParty\VTK\lib;H:\TPLibrary\PCL 1.8.1\3rdParty\Qhull\lib;H:\TPLibrary\PCL 1.8.1\3rdParty\FLANN\lib;H:\TPLibrary\PCL 1.8.1\3rdParty\Boost\lib;H:\TPLibrary\PCL 1.8.1\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\Program Files\Microsoft SDKs\Kinect\v1.8\inc;D:\OpenGL_TL\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\OpenGL_TL\lib;C:\Program Files\Microsoft SDKs\Kinect\v1.8\lib\x86;$(LibraryPath)</LibraryPath>
@@ -80,7 +81,10 @@
     <IncludePath>C:\Program Files\Microsoft SDKs\Kinect\v1.8\inc;D:\OpenGL_TL\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\OpenGL_TL\lib;C:\Program Files\Microsoft SDKs\Kinect\v1.8\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Program Files\Microsoft SDKs\Kinect\v1.8\inc;D:\OpenGL_TL\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\OpenGL_TL\lib;C:\Program Files\Microsoft SDKs\Kinect\v1.8\lib\x86;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
