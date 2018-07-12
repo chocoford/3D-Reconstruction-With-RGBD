@@ -62,7 +62,7 @@ const int8_t rOffset = 15;
 const int8_t gOffset = 16;
 const int8_t bOffset = 17;
 
-const int MAXFIELD = 10;
+const int MAXFIELD = 2;
 
 int main()
 {
@@ -115,16 +115,15 @@ int main()
 	for (int i = 0; i < rowNum; i++) {
 		for (int j = 0; j < colNum; j++)
 		{
-			vertices[vertexStride * (colNum * i + j) + xOffset] = ((float)j - (float)colNum / 2.0) * 0.01; // x
-			vertices[vertexStride * (colNum * i + j) + yOffset] = -((float)i - (float)rowNum / 2.0) * 0.01; // y
-			vertices[vertexStride * (colNum * i + j) + zOffset] = 0;                        //depth
+			vertices[vertexStride * (colNum * i + j) + xOffset] = ((float)j - (float)colNum / 2.0) * 0.01;   // x
+			vertices[vertexStride * (colNum * i + j) + yOffset] = -((float)i - (float)rowNum / 2.0) * 0.01;  // y
+			vertices[vertexStride * (colNum * i + j) + zOffset] = 0;									     //depth
 			
-			for (int k = uxOffset; k < rOffset; k++) vertices[vertexStride * (colNum * i + j) + k] = 0;    //all vertices that to be calculate
-
-			vertices[vertexStride * (colNum * i + j) + rOffset] = 0;                        //R
-			vertices[vertexStride * (colNum * i + j) + gOffset] = 0;                        //G
-			vertices[vertexStride * (colNum * i + j) + bOffset] = 0;                        //B
-			// initialize indices values;
+			for (int k = uxOffset; k < rOffset; k++) vertices[vertexStride * (colNum * i + j) + k] = 0;		 //all vertices that to be calculate
+			vertices[vertexStride * (colNum * i + j) + rOffset] = 0;										 //R
+			vertices[vertexStride * (colNum * i + j) + gOffset] = 0;									     //G
+			vertices[vertexStride * (colNum * i + j) + bOffset] = 0;									     //B
+			// initialize indices values;	
 			indices[(640 * i + j)] = 0;
 			indices[2 * (640 * i + j)] = 0;
 			indices[3 * (640 * i + j)] = 0;
@@ -161,7 +160,7 @@ int main()
 		}
 
 		// calculate normal vector.
-		if (NULL)
+		//if (NULL)
 		for (long i = 0; i < vertexCount; i++)
 		{
 			int col = i % colNum;
@@ -214,40 +213,35 @@ int main()
 			}
 		}
 
-
-		//triangulator.triangulate(vertices);
-
 		long index = 0;
-		for (int i = 0; i < rowNum - 1; i++)
-		{
+		for (int i = 0; i < rowNum - 1; i++) {
 			for (int j = 0; j < colNum; j++) {
-				int first = 0;
-				if (j == 0)
-					indices[index++] = colNum * i + j;
+				long currentIndex = colNum * i + j;
+				long nextLineOfCurrentIndex = colNum * (i + 1) + j;
+				long rightOfCurrentIndex = colNum * i + j + 1;
+				if (j == 0) indices[index++] = currentIndex;
 
-				indices[index++] = colNum * i + j;
-
-				if ((i != rowNum - 1) && (abs((vertices[vertexStride * indices[index - 1] + 2]
-					- vertices[vertexStride * indices[index - 1] + 2 + colNum * vertexStride])) >= MAXFIELD))
+				indices[index++] = currentIndex;
+				if ((i != rowNum - 1) && (abs((vertices[vertexStride * currentIndex + zOffset]
+					- vertices[vertexStride * (currentIndex + colNum) + zOffset])) >= MAXFIELD))
 				{
-					indices[index++] = colNum * i + j;
-					indices[index++] = colNum * (i + 1) + j;
-					first = 1;
-					additionIndexCount += 2;
+					indices[index++] = currentIndex;
+					indices[index++] = nextLineOfCurrentIndex;
+					additionIndexCount += 2;  //indicate that two index information have been added in indeces.
 				}
+				indices[index++] = nextLineOfCurrentIndex;
 
-				indices[index++] = colNum * (i + 1) + j;
-				if ((j != colNum - 1) && (abs((vertices[vertexStride * indices[index - 2 - first] + 2]
-					- vertices[vertexStride * indices[index - 2 - first] + 2 + vertexStride])) >= MAXFIELD))
+				if ((j != colNum - 1) && (abs((vertices[vertexStride * nextLineOfCurrentIndex + zOffset]
+					- vertices[vertexStride * rightOfCurrentIndex + zOffset])) >= MAXFIELD))
 				{
-					indices[index++] = colNum * (i + 1) + j;
-					indices[index++] = colNum * i + j + 1;
+					indices[index++] = nextLineOfCurrentIndex;
+					indices[index++] = rightOfCurrentIndex;
 					additionIndexCount += 2;
 
 				}
 
 				if (j == colNum - 1)
-					indices[index++] = colNum * (i + 1) + j;
+					indices[index++] = nextLineOfCurrentIndex;
 			}
 		}
 
@@ -307,7 +301,7 @@ int main()
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 4000.0f);
+		projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
 		// retrieve the matrix uniform locations
 		unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
 		unsigned int viewLoc = glGetUniformLocation(ourShader.ID, "view");

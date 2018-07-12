@@ -17,12 +17,10 @@ void main()
 {
 	
 	gl_Position = projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0f);
-	outColor = vec3(-aPos.z / 20); // 将ourColor设置为我们从顶点数据那里得到的输入颜色
+	outColor = vec3(-(aPos.z / 2.5) + 0.2); // 将ourColor设置为我们从顶点数据那里得到的输入颜色
 
-	vec3 upLeft = cross(nu, nl);
-	vec3 downRight = cross(nd, nr);
+	vec3 upLeft = normalize(cross(nu, nl));
+	vec3 downRight = normalize(cross(nd, nr));
 
-	normal = normalize(upLeft * downRight);
-
-	//outColor = normalize(aNormal);
+	normal = (upLeft * downRight);
 }

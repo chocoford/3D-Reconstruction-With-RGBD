@@ -6,5 +6,5 @@ in vec3 normal;
 
 void main()
 {
-    FragColor = vec4(normalize(normal), 1.0f);
+    FragColor = vec4(sqrt(outColor) * normalize(vec3(pow(normal.x, 3), normal.y, sin(normal.z))), 1.0f);
 }
