@@ -26,6 +26,10 @@ KinectSensor::KinectSensor() :
     m_depthRGBX = new BYTE[cDepthWidth*cDepthHeight*cBytesPerPixel];
 	depthValues = new USHORT[cDepthWidth*cDepthHeight];
 	colorsRGBValues = new USHORT[cDepthWidth * cDepthHeight * 3];
+	m_depthD16 = new USHORT[cDepthWidth*cDepthHeight]; 
+	m_colorCoordinates = new LONG[cDepthWidth*cDepthHeight * 2];
+
+	m_colorToDepthDivisor = 1;
 }
 
 /// <summary>
@@ -47,6 +51,8 @@ KinectSensor::~KinectSensor()
     delete[] m_depthRGBX;
 	delete[] colorsRGBValues;
 	delete[] depthValues;
+	delete[] m_colorCoordinates;
+	delete[] m_depthD16;
 
     SafeRelease(m_pNuiSensor);
 	//CloseHandle(m_hNextDepthFrameEvent);
@@ -187,41 +193,29 @@ void KinectSensor::ProcessDepth()
     // Make sure we've received valid data
     if (LockedRect.Pitch != 0)
     {
+//		std::cout << LockedRect.size<< " " << sizeof(LockedRect.pBits) << " " << sizeof(*m_depthD16);
+		//memcpy(m_depthD16, LockedRect.pBits, LockedRect.size);
         // Get the min and max reliable depth for the current frame
         int minDepth = (nearMode ? NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE : NUI_IMAGE_DEPTH_MINIMUM) >> NUI_IMAGE_PLAYER_INDEX_SHIFT;
         int maxDepth = (nearMode ? NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE : NUI_IMAGE_DEPTH_MAXIMUM) >> NUI_IMAGE_PLAYER_INDEX_SHIFT;
 
         BYTE * rgbrun = m_depthRGBX;
 		USHORT * depthValue = depthValues;
+		USHORT * depthD16 = m_depthD16;
         const NUI_DEPTH_IMAGE_PIXEL * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_PIXEL *>(LockedRect.pBits);
 
         // end pixel is start + width*height - 1
         const NUI_DEPTH_IMAGE_PIXEL * pBufferEnd = pBufferRun + (cDepthWidth * cDepthHeight);
-		
-		//-----------------test---------------//
-		//long count = 0;
 
-		//----------test end -------------------//
         while ( pBufferRun < pBufferEnd )
         {
             // discard the portion of the depth that contains only the player index
             USHORT depth = pBufferRun->depth;
-
+			*depthD16 = depth;
 			*depthValue = (depth >= minDepth && depth <= maxDepth ? depth - minDepth : 0);
 			depthValue++;
+			depthD16++;
 
-			//-----------------test---------------//
-			//count++;
-
-			//----------test end -------------------//
-
-            // To convert to a byte, we're discarding the most-significant
-            // rather than least-significant bits.
-            // We're preserving detail, although the intensity will "wrap."
-            // Values outside the reliable depth range are mapped to 0 (black).
-
-            // Note: Using conditionals in this loop could degrade performance.
-            // Consider using a lookup table instead when writing production code.
             BYTE intensity = static_cast<BYTE>(depth >= minDepth && depth <= maxDepth ? depth % 256 : 0);
 
             // Write out blue byte
@@ -265,6 +259,19 @@ void KinectSensor::ProcessColor() {
 	HRESULT hr;
 	NUI_IMAGE_FRAME imageFrame;
 
+	// map color to depth
+
+	// Get of x, y coordinates for color in depth space
+	// This will allow us to later compensate for the differences in location, angle, etc between the depth and color cameras
+	m_pNuiSensor->NuiImageGetColorPixelCoordinateFrameFromDepthPixelFrameAtResolution(
+		NUI_IMAGE_RESOLUTION_640x480,
+		NUI_IMAGE_RESOLUTION_640x480,
+		kinectWidth*kinectHeight,
+		m_depthD16,
+		kinectWidth*kinectHeight * 2,
+		m_colorCoordinates
+	);
+
 	// Attempt to get the color frame
 	hr = m_pNuiSensor->NuiImageStreamGetNextFrame(m_pColorStreamHandle, 0, &imageFrame);
 	if (FAILED(hr))
@@ -281,19 +288,66 @@ void KinectSensor::ProcessColor() {
 	// Make sure we've received valid data
 	if (LockedRect.Pitch != 0)
 	{
+
+		for (LONG y = 0; y < kinectHeight; ++y)
+		{
+			USHORT* pDest = colorsRGBValues + LockedRect.Pitch * y;
+			for (LONG x = 0; x < kinectWidth; ++x)
+			{
+
+				// calculate index into depth array
+				int depthIndex = x / m_colorToDepthDivisor + y / m_colorToDepthDivisor * kinectWidth;
+
+				//// retrieve the depth to color mapping for the current depth pixel
+				LONG colorInDepthX = m_colorCoordinates[depthIndex * 2];
+				LONG colorInDepthY = m_colorCoordinates[depthIndex * 2 + 1];
+				// make sure the depth pixel maps to a valid point in color space
+				if (colorInDepthX >= 0 && colorInDepthX < kinectWidth && colorInDepthY >= 0 && colorInDepthY < kinectHeight)
+				{
+					// calculate index into color array
+					LONG colorIndex = colorInDepthX + colorInDepthY * kinectWidth;
+
+					// set source for copy to the color pixel
+					LONG* pSrc = (LONG *)LockedRect.pBits + colorIndex;
+					*pDest = *pSrc;
+				}
+				else
+				{
+					*pDest = 0;
+				}
+
+				pDest++;
+			}
+		}
+
+
+
+
 		for (int j = 0; j < cDepthHeight; j++)
 		{
+			unsigned char *pBuffer = (unsigned char*)(LockedRect.pBits) + j * LockedRect.Pitch;
 			for (int i = 0; i < cDepthWidth; i++)
 			{
-				//内部数据是4个字节，0-1-2是BGR，第4个现在未使用
-				//std::cout << (int)LockedRect.pBits[4 * j] << " " << (int)LockedRect.pBits[4 * j + 1] << " " << (int)LockedRect.pBits[4 * j + 2] << std::endl;
-				colorsRGBValues[3 * cDepthWidth * j + i + 0] = (int)LockedRect.pBits[4 * cDepthWidth * j + i]; // R
-				colorsRGBValues[3 * cDepthWidth * j + i + 1] = (int)LockedRect.pBits[4 * cDepthWidth * j + i + 1]; // G
-				colorsRGBValues[3 * cDepthWidth * j + i + 2] = (int)LockedRect.pBits[4 * cDepthWidth * j + i + 2]; // B
+				//int depthIndex = i / m_colorToDepthDivisor + j / m_colorToDepthDivisor * kinectWidth;
+
+				//// retrieve the depth to color mapping for the current depth pixel
+				//LONG colorInDepthX = m_colorCoordinates[depthIndex * 2];
+				//LONG colorInDepthY = m_colorCoordinates[depthIndex * 2 + 1];
+				//// make sure the depth pixel maps to a valid point in color space
+				//if (colorInDepthX >= 0 && colorInDepthX < kinectWidth && colorInDepthY >= 0 && colorInDepthY < kinectHeight)
+				{
+					//内部数据是4个字节，0-1-2是BGR，第4个现在未使用
+					//std::cout << (int)LockedRect.pBits[4 * (cDepthWidth * j + i)] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 3] << std::endl;
+					//std::cout << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i)] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 3] << std::endl;
+					//std::cout << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i)] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 1] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 2] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 3] << std::endl;
+					//std::cout << std::endl;
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 0] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2]; // R
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 1] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1]; // G
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 2] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 0]; // B
+				}
 			}
 		}
 	}
-
 	// We're done with the texture so unlock it
 	pTexture->UnlockRect(0);
 

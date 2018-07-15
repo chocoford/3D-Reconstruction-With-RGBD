@@ -8,11 +8,12 @@
 
 #include "resource.h"
 #include "NuiApi.h"
+#include "header.h"
 
 class KinectSensor
 {
-    static const int        cDepthWidth  = 640;
-    static const int        cDepthHeight = 480;
+    static const int        cDepthWidth  = kinectWidth;
+    static const int        cDepthHeight = kinectHeight;
     static const int        cBytesPerPixel = 4;
 
     static const int        cStatusMessageMaxLen = MAX_PATH*2;
@@ -57,6 +58,10 @@ private:
 	HANDLE                  m_pColorStreamHandle;
     HANDLE                  m_hNextDepthFrameEvent;
 	HANDLE                  m_hNextColorFrameEvent;
+
+	USHORT*                             m_depthD16;
+	LONG*                               m_colorCoordinates;
+	LONG                                m_colorToDepthDivisor;
 
     /// <summary>
     /// Handle new depth and color data

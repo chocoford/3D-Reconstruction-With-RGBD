@@ -43,26 +43,32 @@ const int colNum = kinectWidth;
 const int vertexCount = rowNum * colNum;
 const int verticesSize = rowNum * colNum * vertexStride;
 
-const int8_t xOffset = 0;
-const int8_t yOffset = 1;
-const int8_t zOffset = 2;
-const int8_t uxOffset = 3;
-const int8_t uyOffset = 4;
-const int8_t uzOffset = 5;
-const int8_t lxOffset = 6;
-const int8_t lyOffset = 7;
-const int8_t lzOffset = 8;
-const int8_t dxOffset = 9;
-const int8_t dyOffset = 10;
-const int8_t dzOffset = 11;
-const int8_t rxOffset = 12;
-const int8_t ryOffset = 13;
-const int8_t rzOffset = 14;
-const int8_t rOffset = 15;
-const int8_t gOffset = 16;
-const int8_t bOffset = 17;
+const int xOffset = 0;
+const int yOffset = 1;
+const int zOffset = 2;
+const int uxOffset = 3;
+const int uyOffset = 4;
+const int uzOffset = 5;
+const int lxOffset = 6;
+const int lyOffset = 7;
+const int lzOffset = 8;
+const int dxOffset = 9;
+const int dyOffset = 10;
+const int dzOffset = 11;
+const int rxOffset = 12;
+const int ryOffset = 13;
+const int rzOffset = 14;
+const int rOffset = 15;
+const int gOffset = 16;
+const int bOffset = 17;
 
-const int MAXFIELD = 2;
+
+float gapThreshold = 1;
+
+
+
+
+DisplayMode displayMode;
 
 int main()
 {
@@ -101,6 +107,7 @@ int main()
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 
 	// build and compile our shader program
 	// ------------------------------------
@@ -222,7 +229,7 @@ int main()
 				if (j == 0) indices[index++] = currentIndex;
 
 				indices[index++] = currentIndex;
-				if ((i != rowNum - 1) && (abs((vertices[vertexStride * currentIndex + zOffset] - vertices[vertexStride * (currentIndex + colNum) + zOffset])) >= MAXFIELD))
+				if ((i != rowNum - 1) && (abs((vertices[vertexStride * currentIndex + zOffset] - vertices[vertexStride * (currentIndex + colNum) + zOffset])) >= gapThreshold))
 				{
 					indices[index++] = currentIndex;
 					indices[index++] = nextLineOfCurrentIndex;
@@ -230,7 +237,7 @@ int main()
 				}
 				indices[index++] = nextLineOfCurrentIndex;
 
-				if ((j != colNum - 1) && (abs((vertices[vertexStride * nextLineOfCurrentIndex + zOffset] - vertices[vertexStride * rightOfCurrentIndex + zOffset])) >= MAXFIELD))
+				if ((j != colNum - 1) && (abs((vertices[vertexStride * nextLineOfCurrentIndex + zOffset] - vertices[vertexStride * rightOfCurrentIndex + zOffset])) >= gapThreshold))
 				{
 					indices[index++] = nextLineOfCurrentIndex;
 					indices[index++] = rightOfCurrentIndex;
@@ -305,8 +312,10 @@ int main()
 		// pass them to the shaders (3 different ways)
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+		ourShader.setVec3("viewPos", camera.Position);
 		// note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
 		ourShader.setMat4("projection", projection);
+		ourShader.setInt("displayMode", displayMode);
 
 		// render box
 		glBindVertexArray(VAO);
@@ -353,6 +362,18 @@ void processInput(GLFWwindow *window)
 		camera.ProcessKeyboard(DOWN, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 		camera.ProcessKeyboard(UP, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		displayMode = distantGray;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		displayMode = normalColor;
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+		displayMode = lightGray;
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+		displayMode = sampleColor;
+	if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && gapThreshold < 19.9)
+		gapThreshold += 0.1;
+	if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS && gapThreshold > 0.1)
+		gapThreshold -= 0.1;
 
 }
 
