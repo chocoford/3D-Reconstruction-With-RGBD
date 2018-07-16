@@ -61,6 +61,7 @@ const int rzOffset = 14;
 const int rOffset = 15;
 const int gOffset = 16;
 const int bOffset = 17;
+//const int hPFlagOffset = 18; // hand position flag offset.
 
 
 float gapThreshold = 1;
@@ -122,7 +123,7 @@ int main()
 	for (int i = 0; i < rowNum; i++) {
 		for (int j = 0; j < colNum; j++)
 		{
-			vertices[vertexStride * (colNum * i + j) + xOffset] = ((float)j - (float)colNum / 2.0) * 0.01;   // x
+			vertices[vertexStride * (colNum * i + j) + xOffset] = ((float)j - (float)colNum / 2.0) * 0.01;   // x  range[-3.2, 3.2]
 			vertices[vertexStride * (colNum * i + j) + yOffset] = -((float)i - (float)rowNum / 2.0) * 0.01;  // y
 			vertices[vertexStride * (colNum * i + j) + zOffset] = 0;									     //depth
 			
@@ -316,6 +317,22 @@ int main()
 		// note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
 		ourShader.setMat4("projection", projection);
 		ourShader.setInt("displayMode", displayMode);
+
+		{ //hand mark.
+			glm::vec4 lh1, lh2, rh1, rh2;
+			lh1[0] = (application.leftHandPos[0] - (float)colNum / 4.0) * 0.02; //the magic number is the temp value. Just to be simpler for implementation,
+			lh1[1] = (application.leftHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			lh2[0] = (application.leftHandPos[2] - (float)rowNum / 4.0) * -0.02;
+			lh2[1] = (application.leftHandPos[3] - (float)rowNum / 4.0) * -0.02;
+			rh1[0] = (application.rightHandPos[0] - (float)colNum / 4.0) * 0.02;
+			rh1[1] = (application.rightHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			rh2[0] = (application.rightHandPos[2] - (float)colNum / 4.0) * 0.02;
+			rh2[1] = (application.rightHandPos[3] - (float)rowNum / 4.0) * -0.02;
+			ourShader.setVec2("leftHand1", lh1);
+			ourShader.setVec2("leftHand2", lh2);
+			ourShader.setVec2("rightHand1", rh1);
+			ourShader.setVec2("rightHand2", rh2);
+		}
 
 		// render box
 		glBindVertexArray(VAO);

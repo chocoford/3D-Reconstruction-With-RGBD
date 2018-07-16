@@ -14,6 +14,11 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform vec2 leftHand1;
+uniform vec2 leftHand2;
+uniform vec2 rightHand1;
+uniform vec2 rightHand2;
+
 
 void main()
 {
@@ -26,4 +31,9 @@ void main()
 	vec3 downRight = normalize(cross(nd, nr));
 
 	normal = (upLeft * downRight);
+
+	if (distance(leftHand1, vec2(aPos)) < 0.1 )  outColor = vec3(1.0, 0.0, 0.0);
+	else if (distance(vec2(aPos), rightHand1) < 0.1) outColor = vec3(0.0, 0.0, 1.0);
+	else if (distance(vec2(aPos), leftHand2) < 0.1) outColor = vec3(1.0, 0.0, 1.0);
+	else if (distance(vec2(aPos), rightHand2) < 0.1) outColor = vec3(0.0, 1.0, 1.0);
 }

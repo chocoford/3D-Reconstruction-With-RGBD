@@ -32,6 +32,10 @@ KinectSensor::KinectSensor() :
 	m_colorCoordinates = new LONG[cDepthWidth*cDepthHeight * 2];
 
 	m_colorToDepthDivisor = 1;
+	leftHandNum = rightHandNum = 0;
+
+	leftHandPos = new float[handPosElementNum]; //the first element is the flag indicating the number of valid position.
+	rightHandPos = new float[handPosElementNum];
 }
 
 /// <summary>
@@ -55,6 +59,8 @@ KinectSensor::~KinectSensor()
 	delete[] depthValues;
 	delete[] m_colorCoordinates;
 	delete[] m_depthD16;
+	delete[] leftHandPos;
+	delete[] rightHandPos;
 
     SafeRelease(m_pNuiSensor);
 	if (m_hNextSkeletonEvent && (m_hNextSkeletonEvent != INVALID_HANDLE_VALUE))
@@ -63,11 +69,11 @@ KinectSensor::~KinectSensor()
 	}
 	if (m_hNextDepthFrameEvent && (m_hNextDepthFrameEvent != INVALID_HANDLE_VALUE))
 	{
-		CloseHandle(m_hNextDepthFrameEvent);
+		//CloseHandle(m_hNextDepthFrameEvent);
 	}
 	if (m_hNextColorFrameEvent && (m_hNextColorFrameEvent != INVALID_HANDLE_VALUE))
 	{
-		CloseHandle(m_hNextColorFrameEvent);
+		//CloseHandle(m_hNextColorFrameEvent);
 	}
 }
 
@@ -136,7 +142,7 @@ HRESULT KinectSensor::CreateFirstConnected()
     if (NULL != m_pNuiSensor)
     {
         // Initialize the Kinect and specify that we'll be using depth
-        hr = m_pNuiSensor->NuiInitialize(NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH);
+        hr = m_pNuiSensor->NuiInitialize(NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH | NUI_INITIALIZE_FLAG_USES_SKELETON);
         if (SUCCEEDED(hr))
         {
             // Create an event that will be signaled when depth data is available
@@ -199,12 +205,20 @@ void KinectSensor::ProcessDepth()
         return;
     }
 
+	{
+		NUI_LOCKED_RECT LockedRect;
+		hr = imageFrame.pFrameTexture->LockRect(0, &LockedRect, NULL, 0);
+		if (FAILED(hr)) { goto ReleaseFrame; }
+		memcpy(m_depthD16, LockedRect.pBits, LockedRect.size);
+		hr = imageFrame.pFrameTexture->UnlockRect(0);
+		if (FAILED(hr)) { goto ReleaseFrame; };
+	}
+
     BOOL nearMode;
     INuiFrameTexture* pTexture;
 
     // Get the depth image pixel texture
-    hr = m_pNuiSensor->NuiImageFrameGetDepthImagePixelFrameTexture(
-        m_pDepthStreamHandle, &imageFrame, &nearMode, &pTexture);
+    hr = m_pNuiSensor->NuiImageFrameGetDepthImagePixelFrameTexture(m_pDepthStreamHandle, &imageFrame, &nearMode, &pTexture);
     if (FAILED(hr))
     {
         goto ReleaseFrame;
@@ -214,9 +228,6 @@ void KinectSensor::ProcessDepth()
 
     // Lock the frame data so the Kinect knows not to modify it while we're reading it
     pTexture->LockRect(0, &LockedRect, NULL, 0);
-	//BYTE* depthD16 = new BYTE[LockedRect.size];
-	memcpy(m_depthD16, LockedRect.pBits, LockedRect.size);
-	//m_depthD16 = (USHORT*)depthD16;
 
     // Make sure we've received valid data
     if (LockedRect.Pitch != 0)
@@ -295,69 +306,28 @@ void KinectSensor::ProcessColor() {
 	// Make sure we've received valid data
 	if (LockedRect.Pitch != 0)
 	{
-
-		BYTE* colorInfo = new BYTE[LockedRect.size];
-		memcpy(colorInfo, LockedRect.pBits, LockedRect.size);
-
-
-		for (LONG y = 0; y < kinectHeight; ++y)
+		for (int j = 0; j < cDepthHeight; j++)
 		{
-			LONG* pDest = (LONG*)(colorInfo + LockedRect.Pitch * y);
-			for (LONG x = 0; x < kinectWidth; ++x)
+			for (int i = 0; i < cDepthWidth; i++)
 			{
-
-				// calculate index into depth array
-				int depthIndex = x / m_colorToDepthDivisor + y / m_colorToDepthDivisor * kinectWidth;
-
-				//// retrieve the depth to color mapping for the current depth pixel
+				int depthIndex = i / m_colorToDepthDivisor + j / m_colorToDepthDivisor * kinectWidth;
+				// retrieve the depth to color mapping for the current depth pixel
 				LONG colorInDepthX = m_colorCoordinates[depthIndex * 2];
 				LONG colorInDepthY = m_colorCoordinates[depthIndex * 2 + 1];
 				// make sure the depth pixel maps to a valid point in color space
 				if (colorInDepthX >= 0 && colorInDepthX < kinectWidth && colorInDepthY >= 0 && colorInDepthY < kinectHeight)
-				{
-					// calculate index into color array
-					LONG colorIndex = colorInDepthX + colorInDepthY * kinectWidth;
-
-					// set source for copy to the color pixel
-					LONG* pSrc = (LONG *)LockedRect.pBits + colorIndex;
-					*pDest = *pSrc;
-				}
-				else
-				{
-					*pDest = 0;
-				}
-
-				pDest++;
-			}
-		}
-
-
-
-		for (int j = 0; j < cDepthHeight; j++)
-		{
-			//unsigned char *pBuffer = (unsigned char*)(LockedRect.pBits) + j * LockedRect.Pitch;
-			for (int i = 0; i < cDepthWidth; i++)
-			{
-				//int depthIndex = i / m_colorToDepthDivisor + j / m_colorToDepthDivisor * kinectWidth;
-
-				//// retrieve the depth to color mapping for the current depth pixel
-				//LONG colorInDepthX = m_colorCoordinates[depthIndex * 2];
-				//LONG colorInDepthY = m_colorCoordinates[depthIndex * 2 + 1];
-				//// make sure the depth pixel maps to a valid point in color space
-				//if (colorInDepthX >= 0 && colorInDepthX < kinectWidth && colorInDepthY >= 0 && colorInDepthY < kinectHeight)
 				{
 					//内部数据是4个字节，0-1-2是BGR，第4个现在未使用
 					//std::cout << (int)LockedRect.pBits[4 * (cDepthWidth * j + i)] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2] << " " << (int)LockedRect.pBits[4 * (cDepthWidth * j + i) + 3] << std::endl;
 					//std::cout << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i)] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 3] << std::endl;
 					//std::cout << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i)] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 1] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 2] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 3] << std::endl;
 					//std::cout << std::endl;
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 0] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 2]; // R
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 1] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 1]; // G
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 2] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 0]; // B
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 0] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * colorInDepthY + colorInDepthX) + 2]; // R
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 1] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * colorInDepthY + colorInDepthX) + 1]; // G
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 2] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * colorInDepthY + colorInDepthX) + 0]; // B
 				}
 			}
 		}
-		delete[] colorInfo;
 	}
 	// We're done with the texture so unlock it
 	pTexture->UnlockRect(0);
@@ -399,16 +369,37 @@ void KinectSensor::ProcessSkeleton()
 	int width = rct.right;
 	int height = rct.bottom;
 
+	int leftHandPosIndex = 0, rightHandPosIndex = 0;
+	for (int i = 0; i < handPosElementNum; i++) { leftHandPos[i] = 0; rightHandPos[i] = 0; }
+
 	for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
 	{
 		NUI_SKELETON_TRACKING_STATE trackingState = skeletonFrame.SkeletonData[i].eTrackingState;
 
-		if (NUI_SKELETON_TRACKED == trackingState)
+		//std::cout << skeletonFrame.SkeletonData[i].Position.w;
+
+		if (NUI_SKELETON_TRACKED == trackingState) //表示骨骼有被精确跟踪
 		{
 			// We're tracking the skeleton, draw it
-			//DrawSkeleton(skeletonFrame.SkeletonData[i], width, height);
+			if (skeletonFrame.SkeletonData[i].eSkeletonPositionTrackingState[NUI_SKELETON_POSITION_HAND_LEFT] == NUI_SKELETON_POSITION_TRACKED)
+			{
+				float x, y = 0;
+				NuiTransformSkeletonToDepthImage(skeletonFrame.SkeletonData[i].SkeletonPositions[NUI_SKELETON_POSITION_HAND_LEFT], &x, &y);
+				std::cout << x << " " << y << std::endl;
+				leftHandPos[leftHandPosIndex++] = x;
+				leftHandPos[leftHandPosIndex++] = y;
+				leftHandNum++;
+			}
+			if (skeletonFrame.SkeletonData[i].eSkeletonPositionTrackingState[NUI_SKELETON_POSITION_HAND_RIGHT] == NUI_SKELETON_POSITION_TRACKED)
+			{
+				float x, y = 0;
+				NuiTransformSkeletonToDepthImage(skeletonFrame.SkeletonData[i].SkeletonPositions[NUI_SKELETON_POSITION_HAND_RIGHT], &x, &y);
+				rightHandPos[rightHandPosIndex++] = x;
+				rightHandPos[rightHandPosIndex++] = y;
+				rightHandNum++;
+			}
 		}
-		else if (NUI_SKELETON_POSITION_ONLY == trackingState)
+		else if (NUI_SKELETON_POSITION_ONLY == trackingState) //表示只有骨骼的中心被识别了，肢体并未被跟踪
 		{
 			// we've only received the center point of the skeleton, draw that
 			/*D2D1_ELLIPSE ellipse = D2D1::Ellipse(

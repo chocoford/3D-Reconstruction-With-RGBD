@@ -16,6 +16,8 @@ class KinectSensor
     static const int        cDepthHeight = kinectHeight;
     static const int        cBytesPerPixel = 4;
 
+	static const int        handPosElementNum = 4;
+
     static const int        cStatusMessageMaxLen = MAX_PATH*2;
 
 public:
@@ -45,6 +47,12 @@ public:
 	BYTE*                   m_depthRGBX;
 	USHORT*                 depthValues;
 	unsigned short*                 colorsRGBValues;
+
+	/// about skeleton
+	float*                   leftHandPos;
+	int                      leftHandNum;
+	float*                   rightHandPos;
+	int                      rightHandNum;
 
 private:
     HWND                    m_hWnd;
