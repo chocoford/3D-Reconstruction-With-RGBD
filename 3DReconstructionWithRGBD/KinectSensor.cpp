@@ -19,14 +19,16 @@ KinectSensor::KinectSensor() :
 	m_hNextColorFrameEvent(INVALID_HANDLE_VALUE),
     m_pDepthStreamHandle(INVALID_HANDLE_VALUE),
 	m_pColorStreamHandle(INVALID_HANDLE_VALUE),
+	m_hNextSkeletonEvent(INVALID_HANDLE_VALUE),
+	m_pSkeletonStreamHandle(INVALID_HANDLE_VALUE),
     m_bNearMode(false),
     m_pNuiSensor(NULL)
 {
     // create heap storage for depth pixel data in RGBX format
     m_depthRGBX = new BYTE[cDepthWidth*cDepthHeight*cBytesPerPixel];
 	depthValues = new USHORT[cDepthWidth*cDepthHeight];
-	colorsRGBValues = new USHORT[cDepthWidth * cDepthHeight * 3];
-	m_depthD16 = new USHORT[cDepthWidth*cDepthHeight]; 
+	colorsRGBValues = new unsigned short[cDepthWidth * cDepthHeight * 3];
+	m_depthD16 = new USHORT[cDepthWidth * cDepthHeight * 2]; 
 	m_colorCoordinates = new LONG[cDepthWidth*cDepthHeight * 2];
 
 	m_colorToDepthDivisor = 1;
@@ -55,8 +57,18 @@ KinectSensor::~KinectSensor()
 	delete[] m_depthD16;
 
     SafeRelease(m_pNuiSensor);
-	//CloseHandle(m_hNextDepthFrameEvent);
-	//CloseHandle(m_hNextColorFrameEvent);
+	if (m_hNextSkeletonEvent && (m_hNextSkeletonEvent != INVALID_HANDLE_VALUE))
+	{
+		CloseHandle(m_hNextSkeletonEvent);
+	}
+	if (m_hNextDepthFrameEvent && (m_hNextDepthFrameEvent != INVALID_HANDLE_VALUE))
+	{
+		CloseHandle(m_hNextDepthFrameEvent);
+	}
+	if (m_hNextColorFrameEvent && (m_hNextColorFrameEvent != INVALID_HANDLE_VALUE))
+	{
+		CloseHandle(m_hNextColorFrameEvent);
+	}
 }
 
 /// <summary>
@@ -72,8 +84,15 @@ void KinectSensor::Update()
     if ( WAIT_OBJECT_0 == WaitForSingleObject(m_hNextDepthFrameEvent, 0) )
     {
         ProcessDepth();
+	}
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hNextColorFrameEvent, 0))
+	{
 		ProcessColor();
-    }
+	}
+	if (WAIT_OBJECT_0 == WaitForSingleObject(m_hNextSkeletonEvent, 0))
+	{
+		ProcessSkeleton();
+	}
 }
 
 /// <summary>
@@ -143,6 +162,12 @@ HRESULT KinectSensor::CreateFirstConnected()
 				2,
 				m_hNextColorFrameEvent,
 				&m_pColorStreamHandle);
+
+			// Create an event that will be signaled when skeleton data is available
+			m_hNextSkeletonEvent = CreateEventW(NULL, TRUE, FALSE, NULL);
+
+			// Open a skeleton stream to receive skeleton data
+			hr = m_pNuiSensor->NuiSkeletonTrackingEnable(m_hNextSkeletonEvent, 0);
         }
     }
 
@@ -189,19 +214,21 @@ void KinectSensor::ProcessDepth()
 
     // Lock the frame data so the Kinect knows not to modify it while we're reading it
     pTexture->LockRect(0, &LockedRect, NULL, 0);
+	//BYTE* depthD16 = new BYTE[LockedRect.size];
+	memcpy(m_depthD16, LockedRect.pBits, LockedRect.size);
+	//m_depthD16 = (USHORT*)depthD16;
 
     // Make sure we've received valid data
     if (LockedRect.Pitch != 0)
     {
-//		std::cout << LockedRect.size<< " " << sizeof(LockedRect.pBits) << " " << sizeof(*m_depthD16);
-		//memcpy(m_depthD16, LockedRect.pBits, LockedRect.size);
+
         // Get the min and max reliable depth for the current frame
         int minDepth = (nearMode ? NUI_IMAGE_DEPTH_MINIMUM_NEAR_MODE : NUI_IMAGE_DEPTH_MINIMUM) >> NUI_IMAGE_PLAYER_INDEX_SHIFT;
         int maxDepth = (nearMode ? NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE : NUI_IMAGE_DEPTH_MAXIMUM) >> NUI_IMAGE_PLAYER_INDEX_SHIFT;
 
-        BYTE * rgbrun = m_depthRGBX;
 		USHORT * depthValue = depthValues;
-		USHORT * depthD16 = m_depthD16;
+		//USHORT * depthD16 = m_depthD16;
+
         const NUI_DEPTH_IMAGE_PIXEL * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_PIXEL *>(LockedRect.pBits);
 
         // end pixel is start + width*height - 1
@@ -211,39 +238,19 @@ void KinectSensor::ProcessDepth()
         {
             // discard the portion of the depth that contains only the player index
             USHORT depth = pBufferRun->depth;
-			*depthD16 = depth;
+			//*depthD16 = depth;
 			*depthValue = (depth >= minDepth && depth <= maxDepth ? depth - minDepth : 0);
 			depthValue++;
-			depthD16++;
-
-            BYTE intensity = static_cast<BYTE>(depth >= minDepth && depth <= maxDepth ? depth % 256 : 0);
-
-            // Write out blue byte
-            *(rgbrun++) = intensity;
-
-            // Write out green byte
-            *(rgbrun++) = intensity;
-
-            // Write out red byte
-            *(rgbrun++) = intensity;
-
-            // We're outputting BGR, the last byte in the 32 bits is unused so skip it
-            // If we were outputting BGRA, we would write alpha here.
-            ++rgbrun;
+			//depthD16++;
 
             // Increment our index into the Kinect's depth buffer
             ++pBufferRun;
         }
-
-		//-----------------test---------------//
-		//std::cout << count << std::endl;
-
-		//----------test end -------------------//
     }
 
     // We're done with the texture so unlock it
     pTexture->UnlockRect(0);
-
+	
     pTexture->Release();
 
 ReleaseFrame:
@@ -289,9 +296,13 @@ void KinectSensor::ProcessColor() {
 	if (LockedRect.Pitch != 0)
 	{
 
+		BYTE* colorInfo = new BYTE[LockedRect.size];
+		memcpy(colorInfo, LockedRect.pBits, LockedRect.size);
+
+
 		for (LONG y = 0; y < kinectHeight; ++y)
 		{
-			USHORT* pDest = colorsRGBValues + LockedRect.Pitch * y;
+			LONG* pDest = (LONG*)(colorInfo + LockedRect.Pitch * y);
 			for (LONG x = 0; x < kinectWidth; ++x)
 			{
 
@@ -322,10 +333,9 @@ void KinectSensor::ProcessColor() {
 
 
 
-
 		for (int j = 0; j < cDepthHeight; j++)
 		{
-			unsigned char *pBuffer = (unsigned char*)(LockedRect.pBits) + j * LockedRect.Pitch;
+			//unsigned char *pBuffer = (unsigned char*)(LockedRect.pBits) + j * LockedRect.Pitch;
 			for (int i = 0; i < cDepthWidth; i++)
 			{
 				//int depthIndex = i / m_colorToDepthDivisor + j / m_colorToDepthDivisor * kinectWidth;
@@ -341,18 +351,85 @@ void KinectSensor::ProcessColor() {
 					//std::cout << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i)] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2] << " " << (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 3] << std::endl;
 					//std::cout << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i)] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 1] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 2] << " " << (unsigned short)LockedRect.pBits[(LockedRect.Pitch * j + 4 * i) + 3] << std::endl;
 					//std::cout << std::endl;
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 0] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 2]; // R
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 1] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 1]; // G
-					colorsRGBValues[3 * (cDepthWidth * j + i) + 2] = (unsigned short)LockedRect.pBits[4 * (cDepthWidth * j + i) + 0]; // B
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 0] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 2]; // R
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 1] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 1]; // G
+					colorsRGBValues[3 * (cDepthWidth * j + i) + 2] = (unsigned short)colorInfo[4 * (cDepthWidth * j + i) + 0]; // B
 				}
 			}
 		}
+		delete[] colorInfo;
 	}
 	// We're done with the texture so unlock it
 	pTexture->UnlockRect(0);
 
 	// Release the frame
 	m_pNuiSensor->NuiImageStreamReleaseFrame(m_pColorStreamHandle, &imageFrame);
+}
+
+
+
+/// <summary>
+/// Handle new skeleton data
+/// </summary>
+void KinectSensor::ProcessSkeleton()
+{
+	NUI_SKELETON_FRAME skeletonFrame = { 0 };
+
+	HRESULT hr = m_pNuiSensor->NuiSkeletonGetNextFrame(0, &skeletonFrame);
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	// smooth out the skeleton data
+	m_pNuiSensor->NuiTransformSmooth(&skeletonFrame, NULL);
+
+	// Endure Direct2D is ready to draw
+	//hr = EnsureDirect2DResources();
+	if (FAILED(hr))
+	{
+		return;
+	}
+
+	//m_pRenderTarget->BeginDraw();
+	//m_pRenderTarget->Clear();
+
+	RECT rct;
+	GetClientRect(GetDlgItem(m_hWnd, IDC_VIDEOVIEW), &rct);
+	int width = rct.right;
+	int height = rct.bottom;
+
+	for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
+	{
+		NUI_SKELETON_TRACKING_STATE trackingState = skeletonFrame.SkeletonData[i].eTrackingState;
+
+		if (NUI_SKELETON_TRACKED == trackingState)
+		{
+			// We're tracking the skeleton, draw it
+			//DrawSkeleton(skeletonFrame.SkeletonData[i], width, height);
+		}
+		else if (NUI_SKELETON_POSITION_ONLY == trackingState)
+		{
+			// we've only received the center point of the skeleton, draw that
+			/*D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+				SkeletonToScreen(skeletonFrame.SkeletonData[i].Position, width, height),
+				g_JointThickness,
+				g_JointThickness
+			);*/
+
+			//m_pRenderTarget->DrawEllipse(ellipse, m_pBrushJointTracked);
+		}
+	}
+
+	//hr = m_pRenderTarget->EndDraw();
+
+	// Device lost, need to recreate the render target
+	// We'll dispose it now and retry drawing
+	if (D2DERR_RECREATE_TARGET == hr)
+	{
+		hr = S_OK;
+		//DiscardDirect2DResources();
+	}
 }
 
 

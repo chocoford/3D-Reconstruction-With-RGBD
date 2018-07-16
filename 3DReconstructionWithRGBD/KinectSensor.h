@@ -44,7 +44,7 @@ public:
 
 	BYTE*                   m_depthRGBX;
 	USHORT*                 depthValues;
-	USHORT*                 colorsRGBValues;
+	unsigned short*                 colorsRGBValues;
 
 private:
     HWND                    m_hWnd;
@@ -58,6 +58,8 @@ private:
 	HANDLE                  m_pColorStreamHandle;
     HANDLE                  m_hNextDepthFrameEvent;
 	HANDLE                  m_hNextColorFrameEvent;
+	HANDLE                  m_pSkeletonStreamHandle;
+	HANDLE                  m_hNextSkeletonEvent;
 
 	USHORT*                             m_depthD16;
 	LONG*                               m_colorCoordinates;
@@ -68,6 +70,7 @@ private:
     /// </summary>
     void                    ProcessDepth();
 	void                    ProcessColor();
+	void                    ProcessSkeleton();
 
     /// <summary>
     /// Set the status bar message
