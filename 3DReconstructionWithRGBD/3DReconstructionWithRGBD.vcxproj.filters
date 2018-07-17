@@ -50,6 +50,9 @@
     <ClInclude Include="KinectSensor.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs">
@@ -59,6 +62,12 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="KinectSensor.aps">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="additionalMesh.vs">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="additionalMesh.fs">
       <Filter>资源文件</Filter>
     </None>
   </ItemGroup>

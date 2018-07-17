@@ -15,6 +15,7 @@
 
 #include "Triangulator.h"
 #include "header.h"
+#include "Mesh.h"
 
 #include<iostream>
 
@@ -61,7 +62,6 @@ const int rzOffset = 14;
 const int rOffset = 15;
 const int gOffset = 16;
 const int bOffset = 17;
-//const int hPFlagOffset = 18; // hand position flag offset.
 
 
 float gapThreshold = 1;
@@ -113,12 +113,14 @@ int main()
 	// build and compile our shader program
 	// ------------------------------------
 	Shader ourShader("shader.vs", "shader.fs"); // you can name your shader files however you like
+	Shader addiMeshShader("additionalMesh.vs", "additionalMesh.fs");
 
 	//preconstruct point
 	float *vertices = new float[verticesSize];
 	long indexCount = (colNum - 1) * (rowNum * 2 + 2);
 	unsigned int *indices = new unsigned int[colNum * rowNum * 3];//colNum * rowNum * 3是指最坏情况，即每个点都被点了3次。
 	
+	Mesh cube = Mesh(Mesh::MeshType::cube);
 
 	for (int i = 0; i < rowNum; i++) {
 		for (int j = 0; j < colNum; j++)
@@ -138,17 +140,34 @@ int main()
 		}
 	}
 
+	///for another shader.
+	unsigned int meshVBO , meshVAO;
+	glGenVertexArrays(1, &meshVAO);
+	glGenBuffers(1, &meshVBO);
+	glBindVertexArray(meshVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, meshVBO);
+	glBufferData(GL_ARRAY_BUFFER, cube.vertexCount * sizeof(float), cube.vertices, GL_STATIC_DRAW);
+	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 
-	unsigned int VBO, VAO, EBO;
+
+	unsigned int VAO, VBO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);	
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-	//glPointSize(1);
 	glEnable(GL_DEPTH_TEST);
 	
 
+	/// hands record.
+	//glm::vec4 preLH1 = glm::vec4(1.0);
+	//glm::vec4 preLH2 = glm::vec4(1.0);
+	//glm::vec4 preRH1 = glm::vec4(1.0);
+	//glm::vec4 preRH2 = glm::vec4(1.0);
 
 	// render loop
 	// -----------
@@ -156,7 +175,7 @@ int main()
 	{
 		// preprocess
 		long additionIndexCount = 0;
-
+		int meshIndexCount = 0;
 		application.Update();
 
 
@@ -168,7 +187,6 @@ int main()
 		}
 
 		// calculate normal vector.
-		//if (NULL)
 		for (long i = 0; i < vertexCount; i++)
 		{
 			int col = i % colNum;
@@ -221,6 +239,8 @@ int main()
 			}
 		}
 
+
+
 		long index = 0;
 		for (int i = 0; i < rowNum - 1; i++) {
 			for (int j = 0; j < colNum; j++) {
@@ -250,6 +270,30 @@ int main()
 			}
 		}
 
+
+
+		///mesh
+	/*	{
+			///vertices
+			for (int j = 0; j < cube.vertexCount; j++)
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					vertices[vertexStride * (vertexCount + j) + i] = cube.vertices[i];
+				}
+				for (int i = 0; i < rzOffset - zOffset; i++)
+				{
+					vertices[vertexStride * (vertexCount + j) + zOffset + i] = cube.vertices[zOffset + i % 3];
+				}
+				vertices[vertexStride * (vertexCount + j) + rOffset] = 0.5;
+				vertices[vertexStride * (vertexCount + j) + gOffset] = 0.5;
+				vertices[vertexStride * (vertexCount + j) + bOffset] = 0.5;
+			}
+
+			///indices
+			for (int k = 0; k < cube.indexCount; k++)
+				indices[(indexCount + additionIndexCount) + k] = cube.indices[k] + vertexCount;
+		}*/
 
 
 
@@ -318,27 +362,58 @@ int main()
 		ourShader.setMat4("projection", projection);
 		ourShader.setInt("displayMode", displayMode);
 
-		{ //hand mark.
-			glm::vec4 lh1, lh2, rh1, rh2;
-			lh1[0] = (application.leftHandPos[0] - (float)colNum / 4.0) * 0.02; //the magic number is the temp value. Just to be simpler for implementation,
-			lh1[1] = (application.leftHandPos[1] - (float)rowNum / 4.0) * -0.02;
-			lh2[0] = (application.leftHandPos[2] - (float)rowNum / 4.0) * -0.02;
-			lh2[1] = (application.leftHandPos[3] - (float)rowNum / 4.0) * -0.02;
-			rh1[0] = (application.rightHandPos[0] - (float)colNum / 4.0) * 0.02;
-			rh1[1] = (application.rightHandPos[1] - (float)rowNum / 4.0) * -0.02;
-			rh2[0] = (application.rightHandPos[2] - (float)colNum / 4.0) * 0.02;
-			rh2[1] = (application.rightHandPos[3] - (float)rowNum / 4.0) * -0.02;
+		//{ //hand mark.
+			glm::vec3 lh1, lh2, rh1, rh2;
+			lh1.x = (application.leftHandPos[0] - (float)colNum / 4.0) * 0.02; //the magic number is the temp value. Just to be simpler for implementation,
+			lh1.y = (application.leftHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			lh2.x = (application.leftHandPos[2] - (float)rowNum / 4.0) * -0.02;
+			lh2.y = (application.leftHandPos[3] - (float)rowNum / 4.0) * -0.02;
+			rh1.x = (application.rightHandPos[0] - (float)colNum / 4.0) * 0.02;
+			rh1.y = (application.rightHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			rh2.x = (application.rightHandPos[2] - (float)colNum / 4.0) * 0.02;
+			rh2.y = (application.rightHandPos[3] - (float)rowNum / 4.0) * -0.02;
 			ourShader.setVec2("leftHand1", lh1);
 			ourShader.setVec2("leftHand2", lh2);
 			ourShader.setVec2("rightHand1", rh1);
 			ourShader.setVec2("rightHand2", rh2);
-		}
+
+		
+			int j = std::round(lh1.x * 100 + (float)colNum / 2.0);
+			int i = std::round(lh1.y * 100 + (float)rowNum / 2.0);
+			
+
+			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
+				for (int kx = -3; kx < 3; kx++)
+				{
+					for (int ky = -3; ky < 3; ky++)
+					{
+						lh1.z = lh1.z >= vertices[vertexStride * (colNum * (i + ky) + j + kx) + zOffset] ? lh1.z : vertices[vertexStride * (colNum * (i+ky) + j + kx) + zOffset];
+					}
+				}
+			}
+				
+			//std::cout << lh1.x << " " << lh1.y << " " << vertexStride * (colNum * i + j) + zOffset << " " << lh1.z << std::endl;
+		//}
 
 		// render box
 		glBindVertexArray(VAO);
 		//glDrawArrays(GL_POINTS, 0, 640 * 480);
-		//glDrawArrays(GL_TRIANGLE_STRIP, 0, 639 * (480 * 2 + 2));
 		glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
+
+
+		addiMeshShader.use();
+		addiMeshShader.setMat4("projection", projection);
+		addiMeshShader.setMat4("view", view);
+		addiMeshShader.setVec3("leftHand1", lh1);
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(0, 0.618, 0));
+		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+		addiMeshShader.setMat4("model", model);
+
+		glBindVertexArray(meshVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
@@ -350,6 +425,8 @@ int main()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &meshVAO);
+	glDeleteBuffers(1, &meshVBO);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------

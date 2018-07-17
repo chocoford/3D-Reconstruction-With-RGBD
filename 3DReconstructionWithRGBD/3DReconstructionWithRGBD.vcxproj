@@ -149,6 +149,8 @@
     <ClCompile Include="Triangulator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="additionalMesh.fs" />
+    <None Include="additionalMesh.vs" />
     <None Include="KinectSensor.aps" />
     <None Include="shader.fs" />
     <None Include="shader.vs" />
@@ -157,6 +159,7 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="KinectSensor.h" />
     <ClInclude Include="header.h" />
+    <ClInclude Include="Mesh.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="stdafx.h" />

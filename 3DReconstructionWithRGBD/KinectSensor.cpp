@@ -385,7 +385,7 @@ void KinectSensor::ProcessSkeleton()
 			{
 				float x, y = 0;
 				NuiTransformSkeletonToDepthImage(skeletonFrame.SkeletonData[i].SkeletonPositions[NUI_SKELETON_POSITION_HAND_LEFT], &x, &y);
-				std::cout << x << " " << y << std::endl;
+				//std::cout << x << " " << y << std::endl;
 				leftHandPos[leftHandPosIndex++] = x;
 				leftHandPos[leftHandPosIndex++] = y;
 				leftHandNum++;

@@ -25,15 +25,15 @@ void main()
 	fragPos = vec3(model * vec4(aPos, 1.0));
 	gl_Position = projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0f);
 	outColor = aColor; // 将ourColor设置为我们从顶点数据那里得到的输入颜色
-	worldPos =  vec3(view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0f));
+	worldPos =  vec3(model * vec4(aPos.x, aPos.y, aPos.z, 1.0f));
 
 	vec3 upLeft = normalize(cross(nu, nl));
 	vec3 downRight = normalize(cross(nd, nr));
 
 	normal = (upLeft * downRight);
 
-	if (distance(leftHand1, vec2(aPos)) < 0.1 )  outColor = vec3(1.0, 0.0, 0.0);
-	else if (distance(vec2(aPos), rightHand1) < 0.1) outColor = vec3(0.0, 0.0, 1.0);
-	else if (distance(vec2(aPos), leftHand2) < 0.1) outColor = vec3(1.0, 0.0, 1.0);
-	else if (distance(vec2(aPos), rightHand2) < 0.1) outColor = vec3(0.0, 1.0, 1.0);
+	if (distance(leftHand1, vec2(aPos)) < 0.05)  outColor = vec3(1.0, 0.0, 0.0);
+	else if (distance(vec2(aPos), rightHand1) < 0.05) outColor = vec3(0.0, 0.0, 1.0);
+	else if (distance(vec2(aPos), leftHand2) < 0.05) outColor = vec3(1.0, 0.0, 1.0);
+	else if (distance(vec2(aPos), rightHand2) < 0.05) outColor = vec3(0.0, 1.0, 1.0);
 }

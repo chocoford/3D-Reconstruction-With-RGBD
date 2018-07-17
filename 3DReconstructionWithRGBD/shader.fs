@@ -13,7 +13,7 @@ uniform int displayMode;
 void main() {
     switch(displayMode) {
         case 0:
-            FragColor = vec4(vec3(-(worldPos.z / 2.5) + 0.2), 1.0);
+            FragColor = vec4(vec3(-(worldPos.z / 12.5)), 1.0);
             break;
 
         case 1:
