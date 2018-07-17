@@ -6,5 +6,6 @@ enum DisplayMode {
 	distantGray = 0,
 	normalColor,
 	lightGray,
-	sampleColor
+	sampleColor,
+	darkMode
 };

@@ -340,7 +340,7 @@ int main()
 		processInput(window);
 
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		displayMode == darkMode ? glClearColor(0.0f, 0.0f, 0.0f, 1.0f) : glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// draw our first triangle
@@ -366,6 +366,7 @@ int main()
 			glm::vec3 lh1, lh2, rh1, rh2;
 			lh1.x = (application.leftHandPos[0] - (float)colNum / 4.0) * 0.02; //the magic number is the temp value. Just to be simpler for implementation,
 			lh1.y = (application.leftHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			lh1.z = 200; // when there is no value, then we draw it far from we could see.
 			lh2.x = (application.leftHandPos[2] - (float)rowNum / 4.0) * -0.02;
 			lh2.y = (application.leftHandPos[3] - (float)rowNum / 4.0) * -0.02;
 			rh1.x = (application.rightHandPos[0] - (float)colNum / 4.0) * 0.02;
@@ -376,23 +377,21 @@ int main()
 			ourShader.setVec2("leftHand2", lh2);
 			ourShader.setVec2("rightHand1", rh1);
 			ourShader.setVec2("rightHand2", rh2);
-
+			
 		
 			int j = std::round(lh1.x * 100 + (float)colNum / 2.0);
 			int i = std::round(lh1.y * 100 + (float)rowNum / 2.0);
-			
-
 			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
-				for (int kx = -3; kx < 3; kx++)
-				{
-					for (int ky = -3; ky < 3; ky++)
-					{
-						lh1.z = lh1.z >= vertices[vertexStride * (colNum * (i + ky) + j + kx) + zOffset] ? lh1.z : vertices[vertexStride * (colNum * (i+ky) + j + kx) + zOffset];
-					}
-				}
+				//for (int kx = -3; kx < 3; kx++)
+				//{
+				//	for (int ky = -3; ky < 3; ky++)
+				//	{
+				//		lh1.z = lh1.z >= vertices[vertexStride * (colNum * (i + ky) + j + kx) + zOffset] ? lh1.z : vertices[vertexStride * (colNum * (i+ky) + j + kx) + zOffset];
+				//	}
+				//}
+				lh1.z = vertices[vertexStride * (colNum * i + j) + zOffset];
 			}
 				
-			//std::cout << lh1.x << " " << lh1.y << " " << vertexStride * (colNum * i + j) + zOffset << " " << lh1.z << std::endl;
 		//}
 
 		// render box
@@ -406,8 +405,8 @@ int main()
 		addiMeshShader.setMat4("view", view);
 		addiMeshShader.setVec3("leftHand1", lh1);
 		model = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 		model = glm::translate(model, glm::vec3(0, 0.618, 0));
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
 		addiMeshShader.setMat4("model", model);
 
@@ -464,6 +463,8 @@ void processInput(GLFWwindow *window)
 		displayMode = lightGray;
 	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
 		displayMode = sampleColor;
+	if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS)
+		displayMode = darkMode;
 	if (glfwGetKey(window, GLFW_KEY_EQUAL) == GLFW_PRESS && gapThreshold < 19.9)
 		gapThreshold += 0.1;
 	if (glfwGetKey(window, GLFW_KEY_MINUS) == GLFW_PRESS && gapThreshold > 0.1)

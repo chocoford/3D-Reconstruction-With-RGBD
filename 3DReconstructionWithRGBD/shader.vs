@@ -9,6 +9,8 @@ out vec3 outColor; // 向片段着色器输出一个颜色
 out vec3 normal;
 out vec3 fragPos;
 out vec3 worldPos;
+out vec3 dkModeLightPos;
+out vec2 dkModeHasLight;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -22,6 +24,7 @@ uniform vec2 rightHand2;
 
 void main()
 {
+	
 	fragPos = vec3(model * vec4(aPos, 1.0));
 	gl_Position = projection * view * model * vec4(aPos.x, aPos.y, aPos.z, 1.0f);
 	outColor = aColor; // 将ourColor设置为我们从顶点数据那里得到的输入颜色
@@ -32,8 +35,14 @@ void main()
 
 	normal = (upLeft * downRight);
 
-	if (distance(leftHand1, vec2(aPos)) < 0.05)  outColor = vec3(1.0, 0.0, 0.0);
-	else if (distance(vec2(aPos), rightHand1) < 0.05) outColor = vec3(0.0, 0.0, 1.0);
-	else if (distance(vec2(aPos), leftHand2) < 0.05) outColor = vec3(1.0, 0.0, 1.0);
-	else if (distance(vec2(aPos), rightHand2) < 0.05) outColor = vec3(0.0, 1.0, 1.0);
+	//if (distance(leftHand1, vec2(aPos)) < 0.05)  outColor = vec3(1.0, 0.0, 0.0);
+	//else if (distance(vec2(aPos), rightHand1) < 0.05) outColor = vec3(0.0, 0.0, 1.0);
+	//else if (distance(vec2(aPos), leftHand2) < 0.05) outColor = vec3(1.0, 0.0, 1.0);
+	//else if (distance(vec2(aPos), rightHand2) < 0.05) outColor = vec3(0.0, 1.0, 1.0);
+
+	if (distance( vec2(aPos), rightHand1) < 0.2 && distance(leftHand1, vec2(aPos)) < 0.2) {
+		dkModeLightPos = aPos + vec3(0, 2, 0);
+		dkModeHasLight = vec2(1);
+		outColor = vec3(1.0, 0.0, 1.0);
+		} else { dkModeHasLight = vec2(0); }
 }

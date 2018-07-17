@@ -240,6 +240,11 @@ void KinectSensor::ProcessDepth()
 		USHORT * depthValue = depthValues;
 		//USHORT * depthD16 = m_depthD16;
 
+		//const NUI_DEPTH_IMAGE_POINT * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_POINT *>(LockedRect.pBits);
+
+		//// end pixel is start + width*height - 1
+		//const NUI_DEPTH_IMAGE_POINT * pBufferEnd = pBufferRun + (cDepthWidth * cDepthHeight);
+
         const NUI_DEPTH_IMAGE_PIXEL * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_PIXEL *>(LockedRect.pBits);
 
         // end pixel is start + width*height - 1
@@ -247,6 +252,8 @@ void KinectSensor::ProcessDepth()
 
         while ( pBufferRun < pBufferEnd )
         {
+			//std::cout << pBufferRun->x << " " << pBufferRun->y << " " << pBufferRun->depth << " " << pBufferRun->reserved << std::endl;
+
             // discard the portion of the depth that contains only the player index
             USHORT depth = pBufferRun->depth;
 			//*depthD16 = depth;
