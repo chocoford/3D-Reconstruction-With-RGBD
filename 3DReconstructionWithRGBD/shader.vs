@@ -35,8 +35,8 @@ void main()
 
 	normal = (upLeft * downRight);
 
-	//if (distance(leftHand1, vec2(aPos)) < 0.05)  outColor = vec3(1.0, 0.0, 0.0);
-	//else if (distance(vec2(aPos), rightHand1) < 0.05) outColor = vec3(0.0, 0.0, 1.0);
+	if (distance(leftHand1, vec2(aPos)) < 0.05)  outColor = vec3(1.0, 0.0, 0.0);
+	else if (distance(vec2(aPos), rightHand1) < 0.05) outColor = vec3(0.0, 0.0, 1.0);
 	//else if (distance(vec2(aPos), leftHand2) < 0.05) outColor = vec3(1.0, 0.0, 1.0);
 	//else if (distance(vec2(aPos), rightHand2) < 0.05) outColor = vec3(0.0, 1.0, 1.0);
 

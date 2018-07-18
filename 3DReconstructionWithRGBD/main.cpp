@@ -371,6 +371,7 @@ int main()
 			lh2.y = (application.leftHandPos[3] - (float)rowNum / 4.0) * -0.02;
 			rh1.x = (application.rightHandPos[0] - (float)colNum / 4.0) * 0.02;
 			rh1.y = (application.rightHandPos[1] - (float)rowNum / 4.0) * -0.02;
+			rh1.z = 200; // when there is no value, then we draw it far from we could see.
 			rh2.x = (application.rightHandPos[2] - (float)colNum / 4.0) * 0.02;
 			rh2.y = (application.rightHandPos[3] - (float)rowNum / 4.0) * -0.02;
 			ourShader.setVec2("leftHand1", lh1);
@@ -378,7 +379,7 @@ int main()
 			ourShader.setVec2("rightHand1", rh1);
 			ourShader.setVec2("rightHand2", rh2);
 			
-		
+		{
 			int j = std::round(lh1.x * 100 + (float)colNum / 2.0);
 			int i = std::round(lh1.y * 100 + (float)rowNum / 2.0);
 			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
@@ -391,6 +392,15 @@ int main()
 				//}
 				lh1.z = vertices[vertexStride * (colNum * i + j) + zOffset];
 			}
+		}
+		{
+			int j = std::round(rh1.x * 100 + (float)colNum / 2.0);
+			int i = std::round(rh1.y * 100 + (float)rowNum / 2.0);
+			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
+				rh1.z = vertices[vertexStride * (colNum * i + j) + zOffset];
+			}
+		}
+			
 				
 		//}
 
@@ -403,15 +413,31 @@ int main()
 		addiMeshShader.use();
 		addiMeshShader.setMat4("projection", projection);
 		addiMeshShader.setMat4("view", view);
-		addiMeshShader.setVec3("leftHand1", lh1);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0, 0.618, 0));
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-		addiMeshShader.setMat4("model", model);
+		{
+			//left hand 1
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0, 0.4, 0));
+			model = glm::translate(model, lh1);
+			model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+			model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+			addiMeshShader.setMat4("model", model);
 
-		glBindVertexArray(meshVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(meshVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+
+			//right hand 1
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(0, 0.4, 0));
+			model = glm::translate(model, rh1);
+			model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+			model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+			addiMeshShader.setMat4("model", model);
+
+			glBindVertexArray(meshVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		}
+
 
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

@@ -9,13 +9,8 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform vec3 leftHand1;
-uniform vec2 leftHand2;
-uniform vec2 rightHand1;
-uniform vec2 rightHand2;
-
 
 void main() {
-	gl_Position = projection * view * (model * vec4(aPos, 1.0f) + vec4(leftHand1, 0.0));
+	gl_Position = projection * view * model * vec4(aPos, 1.0f);
 	outColor = aColor;
 }

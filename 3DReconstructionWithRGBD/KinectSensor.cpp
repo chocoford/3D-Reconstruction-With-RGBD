@@ -238,12 +238,6 @@ void KinectSensor::ProcessDepth()
         int maxDepth = (nearMode ? NUI_IMAGE_DEPTH_MAXIMUM_NEAR_MODE : NUI_IMAGE_DEPTH_MAXIMUM) >> NUI_IMAGE_PLAYER_INDEX_SHIFT;
 
 		USHORT * depthValue = depthValues;
-		//USHORT * depthD16 = m_depthD16;
-
-		//const NUI_DEPTH_IMAGE_POINT * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_POINT *>(LockedRect.pBits);
-
-		//// end pixel is start + width*height - 1
-		//const NUI_DEPTH_IMAGE_POINT * pBufferEnd = pBufferRun + (cDepthWidth * cDepthHeight);
 
         const NUI_DEPTH_IMAGE_PIXEL * pBufferRun = reinterpret_cast<const NUI_DEPTH_IMAGE_PIXEL *>(LockedRect.pBits);
 
@@ -252,14 +246,10 @@ void KinectSensor::ProcessDepth()
 
         while ( pBufferRun < pBufferEnd )
         {
-			//std::cout << pBufferRun->x << " " << pBufferRun->y << " " << pBufferRun->depth << " " << pBufferRun->reserved << std::endl;
-
             // discard the portion of the depth that contains only the player index
             USHORT depth = pBufferRun->depth;
-			//*depthD16 = depth;
 			*depthValue = (depth >= minDepth && depth <= maxDepth ? depth - minDepth : 0);
 			depthValue++;
-			//depthD16++;
 
             // Increment our index into the Kinect's depth buffer
             ++pBufferRun;
