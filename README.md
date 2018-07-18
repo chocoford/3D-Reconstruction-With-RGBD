@@ -1,4 +1,4 @@
-# 3D-Reconstruction-With-RGBD
+# 3D-Reconstruction-With-RGBD [简体中文]: https://github.com/Dove2/3D-Reconstruction-With-RGBD/blob/master/README-CN.md
 
 ![](https://img.shields.io/badge/build-passing-brightgreen.svg)
 ![](https://img.shields.io/badge/visual_studio-2017-blue.svg)
