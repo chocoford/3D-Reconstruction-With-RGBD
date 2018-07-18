@@ -11,7 +11,7 @@
 ## Introduce
 This is a demo built in the third term of BUCT. It is a task assigned by *HuWei* which requires us make a work with Kinect.So we do a 3D-Reconstruction with it. This demo is not completely finished. Therefore it leaves many unconstructed or under constructing function. In this demo, we implement the function of four display mode for model we construct with point could. And implement a simple AR function.
 
-![](/Users/dove/Downloads/IMG_7904.PNG)
+![](Resource/AR_show.PNG)
 
 ## Features
 
@@ -42,11 +42,11 @@ This is a demo built in the third term of BUCT. It is a task assigned by *HuWei*
 
 1. include directory:
 	
-	![](Resources/include_path.PNG)
+	![](Resource/include_path.PNG)
 	
 2. library directory:
 
-	![](Resources/library_path.PNG)
+	![](Resource/library_path.PNG)
 3. additional dependencies:
 	
     	kernel32.lib
