@@ -380,8 +380,8 @@ int main()
 			ourShader.setVec2("rightHand2", rh2);
 			
 		{
-			int j = std::round(lh1.x * 100 + (float)colNum / 2.0);
-			int i = std::round(lh1.y * 100 + (float)rowNum / 2.0);
+			int j = std::round(application.leftHandPos[0] * 2);
+			int i = std::round(application.leftHandPos[1] * 2.0);
 			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
 				//for (int kx = -3; kx < 3; kx++)
 				//{
@@ -394,8 +394,8 @@ int main()
 			}
 		}
 		{
-			int j = std::round(rh1.x * 100 + (float)colNum / 2.0);
-			int i = std::round(rh1.y * 100 + (float)rowNum / 2.0);
+			int j = std::round(application.rightHandPos[0] * 2.0);
+			int i = std::round(application.rightHandPos[1] * 2.0);
 			if (vertexStride * (colNum * i + j) + zOffset < vertexCount * vertexStride && vertexStride * (colNum * i + j) + zOffset > 0) {
 				rh1.z = vertices[vertexStride * (colNum * i + j) + zOffset];
 			}
@@ -413,6 +413,7 @@ int main()
 		addiMeshShader.use();
 		addiMeshShader.setMat4("projection", projection);
 		addiMeshShader.setMat4("view", view);
+
 		{
 			//left hand 1
 			model = glm::mat4(1.0f);
